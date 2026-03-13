@@ -67,6 +67,12 @@ func BuildTarget(proj *config.Project, target *config.Target, projectDir string,
 		return fmt.Errorf("toolset not found: %q (available: %s)", toolsetName, listToolsetNames(proj))
 	}
 
+	// VS 系ツールセット（compiler が cl）のとき、compiler_flags が空であれば
+	// /W3 /nologo をデフォルトで付与する。
+	if strings.TrimSpace(ts.Compiler) == "cl" && len(ts.CompilerFlags) == 0 {
+		ts.CompilerFlags = append(ts.CompilerFlags, "/W3", "/nologo")
+	}
+
 	// 出力パス: CLI の -o / --output-dir を最優先し、未指定時のみ target の output_dir + output を使う
 	outputPath := config.ResolveOutputPath(target, projectDir)
 	if opts.Output != "" {

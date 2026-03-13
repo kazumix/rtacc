@@ -165,7 +165,6 @@ func runCLI(args []string) error {
 	} else if *output == "" {
 		*output = "app.rta"
 	}
-
 	projectDir, _ := os.Getwd()
 	toolsetToUse := strings.TrimSpace(*toolset)
 	outputDirToUse := strings.TrimSpace(*outputDir)
@@ -186,8 +185,30 @@ func runCLI(args []string) error {
 
 	proj := &config.Project{
 		Toolsets: map[string]config.Toolset{
-			"llvm":   {Compiler: "clang", Linker: "lld"},
-			"vs2017": {Compiler: "cl", Linker: "link", CompilerFlags: []string{"/W3", "/nologo"}},
+			// JSON がない場合でも RTA として成立するよう、最低限のデフォルトを埋めておく。
+			"llvm": {
+				Compiler: "clang",
+				Linker:   "lld",
+				// VERSION / HEAP / STACK は examples/hello と同等の値をデフォルトにする。
+				LinkerFlags: []string{
+					"/VERSION:21076.20053",
+					"/HEAP:1048576,4096",
+					"/STACK:1048576,4096",
+				},
+			},
+			"vs2017": {
+				Compiler: "cl",
+				Linker:   "link",
+				// 何も指定しない場合は /W3 /nologo を基本としつつ、
+				// linker_flags には VERSION/HEAP/STACK/NOLOGO を与える。
+				CompilerFlags: []string{"/W3", "/nologo"},
+				LinkerFlags: []string{
+					"/VERSION:21076.20053",
+					"/HEAP:1048576,4096",
+					"/STACK:1048576,4096",
+					"/NOLOGO",
+				},
+			},
 		},
 		Targets: []config.Target{
 			{
@@ -203,6 +224,22 @@ func runCLI(args []string) error {
 				Flags:       nil,
 			},
 		},
+	}
+
+	// 既存の project.json があれば、使用するツールセットの compiler_flags / linker_flags を
+	// CLI 用の仮想 Project 側のツールセットにマージする。
+	if p, err := config.LoadFile(filepath.Join(projectDir, "project.json")); err == nil {
+		if tsBase, ok := proj.Toolsets[toolsetToUse]; ok {
+			if tsFromJSON, ok2 := p.Toolsets[toolsetToUse]; ok2 {
+				// compiler_flags は「デフォルト + JSON 追加」でよい。
+				tsBase.CompilerFlags = append(tsBase.CompilerFlags, tsFromJSON.CompilerFlags...)
+				// linker_flags は JSON 側に明示的な指定があればそちらを優先する。
+				if len(tsFromJSON.LinkerFlags) > 0 {
+					tsBase.LinkerFlags = append([]string(nil), tsFromJSON.LinkerFlags...)
+				}
+				proj.Toolsets[toolsetToUse] = tsBase
+			}
+		}
 	}
 	// project.json が存在しない場合は、CLI 指定＋デフォルトから生成して保存する。
 	jsonPath := filepath.Join(projectDir, "project.json")
@@ -256,13 +293,15 @@ func splitSemicolon(s string) []string {
 func printUsage() {
 	fmt.Println(`rtacc - INtime RTA ビルドドライバ (LLVM/Clang)
   JSON で指定できる項目はすべて CLI でも指定可能。CLI が JSON より優先。
+  project.json が無くても、CLI だけで VERSION/HEAP/STACK など RTA として必要な
+  リンカオプションを含んだ .rta/.rsl を生成できます。
 
 使い方:
-  rtacc project.json              # プロジェクトの全ターゲットをビルド
-  rtacc project.json --target app  # 指定ターゲットのみ
+  rtacc project.json                # プロジェクトの全ターゲットをビルド
+  rtacc project.json --target app   # 指定ターゲットのみ
   rtacc project.json --toolset llvm --output-dir build/
 
-  rtacc main.c -o app.rta                    # CLI: ソース 1 つ
+  rtacc main.c -o app.rta                    # CLI: ソース 1 つ（project.json 無しでも可）
   rtacc main.c util.c -o app.rta             # 複数ソースはスペース区切りで並べる
   rtacc main.c util.obj -o app.rta --libs "a.lib;b.lib"  # lib は ; 区切り
 
@@ -275,7 +314,7 @@ func printUsage() {
   -target name       ビルドするターゲット名（project.json 時）
   -toolset llvm|vs2017  ツールセット
   -output-dir dir    中間・出力ディレクトリ
-  -optimize, -O 0|1|2|3|s|z  最適化レベル
+  -optimize, -O 0|1|2|3|s|z  最適化レベル（省略時は "2"）
   -I path            インクルード（; で複数）
   -D MACRO           定義（; で複数）
   -libs "a.lib;b.lib" リンクする lib（; で複数）
@@ -286,5 +325,8 @@ func printUsage() {
 環境変数:
   INTIME  INtime ルート（既定: C:\Program Files (x86)\INtime）
   LLVM    LLVM bin ディレクトリ（既定: C:\Program Files\LLVM\bin）
+  ※ CLI モードでは、project.json が存在しない場合でも、LLVM/VS2017 それぞれに
+     VERSION/HEAP/STACK を含んだ既定の linker_flags を内部的に付与します。
+     project.json に linker_flags を書いた場合は、そちらが優先されます。
 `)
 }

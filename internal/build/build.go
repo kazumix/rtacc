@@ -229,7 +229,7 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 		args = append(args, obj)
 	}
 	// INtime 既定 libs（vshelper は1つのみ。重複シンボルを防ぐ）
-	for _, lib := range intimeDefaultLibsLLVM() {
+	for _, lib := range intimeDefaultLibsLLVM(paths.IntimeLib) {
 		args = append(args, "-Xlinker", lib)
 	}
 	for _, lib := range t.Libs {
@@ -260,9 +260,17 @@ func defaultLLVMLinkerFlags(intimeLib string) []string {
 	}
 }
 
-// intimeDefaultLibsLLVM は LLVM ツールセット用の INtime 既定ライブラリ。vshelper は1つのみ。netlib は socket API 用で必須。
-func intimeDefaultLibsLLVM() []string {
-	return []string{"pcibus.lib", "netlib.lib", "vshelper22.lib", "clib.lib", "rt.lib"}
+// intimeDefaultLibsLLVM は LLVM ツールセット用の INtime 既定ライブラリ。
+// vshelper22.lib が存在すればそれを、存在しない場合は vshelper17.lib が存在すればそちらを 1 つだけリンクする。
+// netlib は socket API 用で必須。
+func intimeDefaultLibsLLVM(intimeLib string) []string {
+	vshelper := "vshelper22.lib"
+	if _, err := os.Stat(filepath.Join(intimeLib, vshelper)); os.IsNotExist(err) {
+		if _, err2 := os.Stat(filepath.Join(intimeLib, "vshelper17.lib")); err2 == nil {
+			vshelper = "vshelper17.lib"
+		}
+	}
+	return []string{"pcibus.lib", "netlib.lib", vshelper, "clib.lib", "rt.lib"}
 }
 
 // intimeDefaultLibsVS は VS ツールセット用の INtime 既定ライブラリ。toolset 名に応じて vshelper を1つだけ選ぶ。netlib は socket API 用で必須。

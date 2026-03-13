@@ -245,8 +245,12 @@ func runCLI(args []string) error {
 	jsonPath := filepath.Join(projectDir, "project.json")
 	if _, err := os.Stat(jsonPath); err != nil {
 		if os.IsNotExist(err) {
-			// 保存に失敗してもビルド自体は続行する。
-			_ = config.SaveFile(jsonPath, proj)
+			// 保存に失敗してもビルド自体は続行するが、ユーザーにはログを出す。
+			if err := config.SaveFile(jsonPath, proj); err != nil {
+				fmt.Fprintf(os.Stderr, "rtacc: warning: failed to generate %s: %v\n", jsonPath, err)
+			} else {
+				fmt.Fprintf(os.Stderr, "rtacc: generated %s (from CLI options)\n", jsonPath)
+			}
 		}
 	}
 	// CLI 指定はすべて opts に載せて BuildTarget で JSON より優先させる

@@ -146,6 +146,7 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 	if _, err := os.Stat(clang); os.IsNotExist(err) {
 		return fmt.Errorf("clang が見つかりません: %s", clang)
 	}
+	// ST→LL 用コンパイラ（llst.exe）は、必要になったときに LookPath する。
 	if _, err := os.Stat(paths.IntimeInclude); os.IsNotExist(err) {
 		return fmt.Errorf("INtime include が見つかりません: %s", paths.IntimeInclude)
 	}
@@ -191,6 +192,134 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			args1 = append(args1, compilerFlags...)
 			args1 = append(args1, pathSrc, "-o", llPath)
 			if err := run(clang, args1, "C→LL"); err != nil {
+				return err
+			}
+			// 2) .ll -> .asm
+			args2 := []string{"-x", "ir"}
+			args2 = append(args2, baseCompile...)
+			args2 = append(args2, "-S", llPath, "-o", asmPath)
+			if err := run(clang, args2, "LL→asm"); err != nil {
+				return err
+			}
+			// 3) .asm -> .obj
+			args3 := []string{"-m32", "-target", "i386-pc-windows-msvc", "-c", asmPath, "-o", objPath}
+			if err := run(clang, args3, "asm→obj"); err != nil {
+				return err
+			}
+			objFiles = append(objFiles, objPath)
+		case ".ll":
+			// 事前に別ツール（ST コンパイラなど）で生成された LLVM IR から、
+			// .asm / .obj を生成するパス。
+			base := strings.TrimSuffix(filepath.Base(src), ext)
+			llPath := src
+			if !filepath.IsAbs(llPath) {
+				llPath = filepath.Join(projectDir, llPath)
+			}
+			asmPath := filepath.Join(outDir, base+".asm")
+			objPath := filepath.Join(outDir, base+".obj")
+
+			// .ll -> .asm
+			args2 := []string{"-x", "ir"}
+			args2 = append(args2, baseCompile...)
+			args2 = append(args2, "-S", llPath, "-o", asmPath)
+			if err := run(clang, args2, "LL→asm"); err != nil {
+				return err
+			}
+			// .asm -> .obj
+			args3 := []string{"-m32", "-target", "i386-pc-windows-msvc", "-c", asmPath, "-o", objPath}
+			if err := run(clang, args3, "asm→obj"); err != nil {
+				return err
+			}
+			objFiles = append(objFiles, objPath)
+		case ".st":
+			// ST 言語 (.st) を llst.exe で .ll に変換し、その .ll から .asm/.obj を生成する。
+			base := strings.TrimSuffix(filepath.Base(src), ext)
+			pathSrc := src
+			if !filepath.IsAbs(pathSrc) {
+				pathSrc = filepath.Join(projectDir, src)
+			}
+			llPath := filepath.Join(outDir, base+".ll")
+			asmPath := filepath.Join(outDir, base+".asm")
+			objPath := filepath.Join(outDir, base+".obj")
+
+			// llst.exe のパス決定
+			// 1. 環境変数 LLST があればそれを使用
+			// 2. なければ projectDir/llst.exe を優先
+			// 3. それも無ければ "llst.exe" を PATH から検索
+			llstExe := strings.TrimSpace(os.Getenv("LLST"))
+			if llstExe == "" {
+				cand := filepath.Join(projectDir, "llst.exe")
+				if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
+					llstExe = cand
+				} else {
+					llstExe = "llst.exe"
+				}
+			}
+			// Go 1.20 以降、カレントディレクトリ上の実行ファイルを PATH 経由で見つけた場合は
+			// "cannot run executable found relative to current directory" になるため、
+			// パスに区切り文字が含まれない場合だけ LookPath で絶対パス化する。
+			if !strings.Contains(llstExe, string(os.PathSeparator)) {
+				if abs, err := exec.LookPath(llstExe); err == nil {
+					llstExe = abs
+				} else {
+					return fmt.Errorf("ST コンパイラ llst.exe が見つかりません: %s (%w)", llstExe, err)
+				}
+			}
+
+			// 1) .st -> .ll （外部 ST コンパイラ）
+			args0 := []string{pathSrc, "-o", llPath}
+			if err := run(llstExe, args0, "ST→LL"); err != nil {
+				return err
+			}
+			// 2) .ll -> .asm
+			args2 := []string{"-x", "ir"}
+			args2 = append(args2, baseCompile...)
+			args2 = append(args2, "-S", llPath, "-o", asmPath)
+			if err := run(clang, args2, "LL→asm"); err != nil {
+				return err
+			}
+			// 3) .asm -> .obj
+			args3 := []string{"-m32", "-target", "i386-pc-windows-msvc", "-c", asmPath, "-o", objPath}
+			if err := run(clang, args3, "asm→obj"); err != nil {
+				return err
+			}
+			objFiles = append(objFiles, objPath)
+		case ".il":
+			// IL 言語 (.il) を llil.exe で .ll に変換し、その .ll から .asm/.obj を生成する。
+			base := strings.TrimSuffix(filepath.Base(src), ext)
+			pathSrc := src
+			if !filepath.IsAbs(pathSrc) {
+				pathSrc = filepath.Join(projectDir, src)
+			}
+			llPath := filepath.Join(outDir, base+".ll")
+			asmPath := filepath.Join(outDir, base+".asm")
+			objPath := filepath.Join(outDir, base+".obj")
+
+			// llil.exe のパス決定
+			// 1. 環境変数 LLIL があればそれを使用
+			// 2. なければ projectDir/llil.exe を優先
+			// 3. それも無ければ "llil.exe" を PATH から検索
+			llilExe := strings.TrimSpace(os.Getenv("LLIL"))
+			if llilExe == "" {
+				cand := filepath.Join(projectDir, "llil.exe")
+				if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
+					llilExe = cand
+				} else {
+					llilExe = "llil.exe"
+				}
+			}
+			// カレントディレクトリ相対の実行を避けるため、パスに区切り文字がない場合のみ LookPath で絶対パス化。
+			if !strings.Contains(llilExe, string(os.PathSeparator)) {
+				if abs, err := exec.LookPath(llilExe); err == nil {
+					llilExe = abs
+				} else {
+					return fmt.Errorf("IL コンパイラ llil.exe が見つかりません: %s (%w)", llilExe, err)
+				}
+			}
+
+			// 1) .il -> .ll （外部 IL コンパイラ）
+			args0 := []string{pathSrc, "-o", llPath}
+			if err := run(llilExe, args0, "IL→LL"); err != nil {
 				return err
 			}
 			// 2) .ll -> .asm

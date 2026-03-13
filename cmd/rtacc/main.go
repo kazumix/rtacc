@@ -43,6 +43,7 @@ func runJSON(jsonPath string, rest []string) error {
 	toolset := fs.String("toolset", "", "上書きツールセット (llvm / vs2017)")
 	outputDir := fs.String("output-dir", "", "出力ディレクトリの上書き")
 	optimize := fs.String("optimize", "", "最適化レベル (0,1,2,3,s,z)")
+	compileOnly := fs.Bool("c", false, "コンパイルのみ（.obj まで。リンクしない）")
 	includes := fs.String("I", "", "インクルードパス（; 区切り）。JSON より優先")
 	defines := fs.String("D", "", "定義（; 区切り）。JSON より優先")
 	libs := fs.String("libs", "", "リンクする lib（; 区切り）。JSON より優先")
@@ -60,11 +61,12 @@ func runJSON(jsonPath string, rest []string) error {
 	projectDir := filepath.Dir(jsonPath)
 	paths := build.DefaultPaths()
 	opts := build.Options{
-		Toolset:    strings.TrimSpace(*toolset),
-		TargetName: strings.TrimSpace(*targetName),
-		Output:     strings.TrimSpace(*output),
+		Toolset:     strings.TrimSpace(*toolset),
+		TargetName:  strings.TrimSpace(*targetName),
+		Output:      strings.TrimSpace(*output),
 		OutputDir:   strings.TrimSpace(*outputDir),
-		Optimize:   strings.TrimSpace(*optimize),
+		CompileOnly: *compileOnly,
+		Optimize:    strings.TrimSpace(*optimize),
 	}
 	if *includes != "" {
 		opts.Includes = splitSemicolon(*includes)
@@ -143,6 +145,7 @@ func runCLI(args []string) error {
 	outputDir := fs.String("output-dir", "", "中間・出力ディレクトリ（省略時は project.json の output_dir またはカレント）")
 	toolset := fs.String("toolset", "", "ツールセット (llvm / vs2017)")
 	optimize := fs.String("O", "2", "最適化レベル (0,1,2,3,s,z)")
+	compileOnly := fs.Bool("c", false, "コンパイルのみ（.obj まで。リンクしない）")
 	includes := fs.String("I", "", "インクルードパス（; 区切り）")
 	defines := fs.String("D", "", "定義（; 区切り）")
 	libs := fs.String("libs", "", "リンクする lib（; 区切り）")
@@ -188,15 +191,16 @@ func runCLI(args []string) error {
 		},
 		Targets: []config.Target{
 			{
-				Name:      "default",
-				Toolset:   toolsetToUse,
-				OutputDir: outputDirToUse,
-				Output:    *output,
-				Optimize:  *optimize,
-				Sources:   sources,
-				Libs:      nil,
-				Defines:   nil,
-				Flags:     nil,
+				Name:        "default",
+				Toolset:     toolsetToUse,
+				OutputDir:   outputDirToUse,
+				Output:      *output,
+				Optimize:    *optimize,
+				CompileOnly: *compileOnly,
+				Sources:     sources,
+				Libs:        nil,
+				Defines:     nil,
+				Flags:       nil,
 			},
 		},
 	}
@@ -210,10 +214,11 @@ func runCLI(args []string) error {
 	}
 	// CLI 指定はすべて opts に載せて BuildTarget で JSON より優先させる
 	opts := build.Options{
-		Toolset:   toolsetToUse,
-		Output:    *output,
-		OutputDir: outputDirToUse,
-		Optimize:  *optimize,
+		Toolset:     toolsetToUse,
+		Output:      *output,
+		OutputDir:   outputDirToUse,
+		CompileOnly: *compileOnly,
+		Optimize:    *optimize,
 	}
 	if *includes != "" {
 		opts.Includes = splitSemicolon(*includes)

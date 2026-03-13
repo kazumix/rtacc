@@ -30,6 +30,7 @@ type Target struct {
 	OutputDir   string   `json:"output_dir"`    // 出力ディレクトリ（空ならカレント）
 	Output      string   `json:"output"`       // 出力ファイル名（.rta or .rsl）
 	Optimize    string   `json:"optimize"`     // 0,1,2,3,s,z
+	CompileOnly bool     `json:"compile_only"` // true の場合は .obj まで（リンクしない）
 	Includes    []string `json:"includes"`
 	Sources     []string `json:"sources"`      // .c, .obj, .lib の並び
 	Libs        []string `json:"libs"`

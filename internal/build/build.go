@@ -16,6 +16,7 @@ type Options struct {
 	TargetName    string   // ビルドする target の name
 	Output        string   // 上書き（CLI -o）
 	OutputDir     string   // 上書き（CLI --output-dir）
+	CompileOnly   bool     // コンパイルのみ（.obj まで。リンクなし）
 	Optimize      string   // 上書き（CLI -O / --optimize）
 	Includes      []string // 上書き（CLI -I）。指定時は JSON の includes より優先
 	Defines       []string // 上書き（CLI -D）
@@ -208,6 +209,14 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 		}
 	}
 
+	// -c / CompileOnly 指定時は .obj 生成までで終了（リンクしない）
+	if t.CompileOnly || opts.CompileOnly {
+		for _, obj := range objFiles {
+			fmt.Printf("Generated object: %s\n", obj)
+		}
+		return nil
+	}
+
 	// リンク
 	linkerFlags := defaultLLVMLinkerFlags(paths.IntimeLib)
 	linkerFlags = append(linkerFlags, ts.LinkerFlags...)
@@ -353,6 +362,14 @@ func buildVS(t *config.Target, ts *config.Toolset, outputPath, outDir, projectDi
 		}
 	}
 
+	// -c / CompileOnly 指定時は .obj 生成までで終了（リンクしない）
+	if t.CompileOnly || opts.CompileOnly {
+		for _, obj := range objFiles {
+			fmt.Printf("Generated object: %s\n", obj)
+		}
+		return nil
+	}
+	
 	// リンク（VERSION/HEAP/STACK は JSON の linker_flags で指定）。netlib と vshelper のシンボル重複は許容。
 	linkerFlags := []string{
 		"/OUT:" + outputPath,

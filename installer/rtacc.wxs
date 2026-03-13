@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <!--
+    rtacc 用 MSI インストーラ（サイレント対応）
+    - 既存の環境変数 INTIME を前提とし、既定インストール先を
+        [INTIME]\RT\bin
+      としている。
+    - INTIME が未設定の場合は既定値
+        C:\Program Files (x86)\INtime
+      を用いる。
+    - サイレント:
+        msiexec /i rtacc.msi /qn
+      などで実行できる。
+
+    ビルド例（WiX Toolset v3 系）:
+      candle.exe -dIntimeRoot="C:\Program Files (x86)\INtime" rtacc.wxs
+      light.exe  -ext WixUIExtension rtacc.wixobj -o rtacc.msi
+
+    ※ Source パスは、MSI ビルド時に rtacc.exe の実際の場所に合わせて調整すること。
+  -->
+
+  <Product
+      Id="*"
+      Name="rtacc"
+      Language="1041"
+      Version="1.0.0"
+      Manufacturer="kazumix"
+      UpgradeCode="4F4E0A6C-8B7E-4A5C-9E3D-1E4F9E2E9C10">
+
+    <Package
+        InstallerVersion="500"
+        Compressed="yes"
+        InstallScope="perMachine" />
+
+    <!-- 単一メディア（埋め込み CAB） -->
+    <MediaTemplate />
+
+    <!-- INTIME ルート。環境変数 INTIME がある場合は msiexec 側で
+         INTIME="C:\Program Files (x86)\INtime" のように上書きできる。 -->
+    <Property Id="INTIME" Value="C:\Program Files (x86)\INtime" />
+
+    <!-- 既定インストール先: [INTIME]\RT\bin -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="INTIME_ROOT" Name="INtime">
+        <!-- INTIME_ROOT の実体は CustomAction ではなく Property で表現し、
+             INSTALLDIR は [INTIME]\RT\bin を指すようにする。-->
+        <Directory Id="RTDIR" Name="RT">
+          <Directory Id="INSTALLDIR" Name="bin" />
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!-- 実際のインストール先を INTIME プロパティで上書き -->
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="rtacc.exe" Guid="0B8BF7E0-7D29-4A0F-A6C9-0D7C7E4B5E90">
+        <!--
+          Source は MSI ビルド時に rtacc.exe の実ファイルパスに合わせて修正すること。
+          例: プロジェクトルートで
+              go build -o dist\rtacc.exe .\cmd\rtacc
+              とした場合:
+                Source="dist\rtacc.exe"
+        -->
+        <File Id="rtaccExe" Source="rtacc.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="rtacc" Level="1">
+      <ComponentRef Id="rtacc.exe" />
+    </Feature>
+
+  </Product>
+</Wix>
+

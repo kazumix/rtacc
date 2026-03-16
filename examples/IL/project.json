@@ -30,7 +30,7 @@
       "name": "default",
       "toolset": "llvm",
       "output_dir": "",
-      "output": "out/test.rta",
+      "output": "out/main.rta",
       "optimize": "2",
       "compile_only": false,
       "includes": null,

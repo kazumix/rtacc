@@ -1,0 +1,8 @@
+FUNCTION NotBool : BOOL
+VAR_INPUT
+    x : BOOL;
+END_VAR
+
+NotBool := NOT x;
+
+END_FUNCTION

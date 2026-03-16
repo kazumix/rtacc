@@ -1,6 +1,38 @@
 # Go 環境セットアップ（Windows）
 
-rtacc.exe をビルドするために Go をインストールします。
+rtacc.exe をビルドするために Go をインストールします。  
+llil.exe / llst.exe（.il / .st 用）も一緒にビルドする場合は、Rust (cargo) も必要です。
+
+---
+
+## 一式ビルド（rtacc + llil + llst）
+
+Go と Rust が入っている状態で、プロジェクトルートで次を実行すると、`bin/` に rtacc.exe / llil.exe / llst.exe が出力されます。
+
+```powershell
+.\build.ps1
+```
+
+**使い方**  
+`bin` フォルダを **PATH に追加**すると、どのウィンドウ・IDE からでも rtacc / llil / llst が使えます（推奨）。  
+設定 → システム → バージョン情報 → システムの詳細設定 → 環境変数 → ユーザーの **Path** に `D:\work\rtacc\bin`（実際のフルパス）を追加してください。  
+環境変数 `RTACC_BIN` に `bin` のフルパスを設定する方法もありますが、別ウィンドウで有効にしたい場合は PATH の方が確実です。
+
+**Rust（llil / llst 用）のインストール**  
+https://rustup.rs の手順に従うか、`winget install Rustlang.Rustup` でインストール後、新しいターミナルで `cargo --version` が動くことを確認してください。
+
+---
+
+## rtacc のみビルドする場合
+
+Go が使える状態で、プロジェクトルートで実行します。
+
+```powershell
+cd D:\work\rtacc
+go build -o rtacc.exe .\cmd\rtacc
+```
+
+`rtacc.exe` ができていればセットアップ完了です。.st / .il を使う場合は llil / llst も必要なので、上記の `.\build.ps1` を推奨します。
 
 ---
 
@@ -54,15 +86,3 @@ go version
    - ユーザーまたはシステムの **Path** に次を追加:
      - `C:\Program Files\Go\bin`
 
----
-
-## rtacc.exe のビルド
-
-Go が使える状態で、プロジェクトルートで実行します。
-
-```powershell
-cd D:\work\rtacc
-go build -o rtacc.exe .\cmd\rtacc
-```
-
-`rtacc.exe` ができていればセットアップ完了です。

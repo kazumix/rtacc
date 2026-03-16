@@ -140,6 +140,69 @@ func listToolsetNames(proj *config.Project) string {
 	return strings.Join(names, ", ")
 }
 
+// resolveHelperExe は llst.exe / llil.exe のパスを次の順で決定する:
+// 1. 環境変数 envVar (LLST / LLIL) が設定されていればその値
+// 2. 環境変数 RTACC_BIN のディレクトリ内の exeName
+// 3. rtacc 実行ファイルと同じディレクトリ内の exeName
+// 4. projectDir 内の exeName
+// 5. PATH 上の exeName
+func resolveHelperExe(envVar, exeName, projectDir string) (string, error) {
+	if v := trimEnvPath(os.Getenv(envVar)); v != "" {
+		return toAbsExe(v, exeName)
+	}
+	if bin := trimEnvPath(os.Getenv("RTACC_BIN")); bin != "" {
+		if p := filepath.Join(bin, exeName); pathExistsFile(p) {
+			return p, nil
+		}
+	}
+	if rtaccDir, err := rtaccExeDir(); err == nil && rtaccDir != "" {
+		if p := filepath.Join(rtaccDir, exeName); pathExistsFile(p) {
+			return p, nil
+		}
+	}
+	if projectDir != "" {
+		if p := filepath.Join(projectDir, exeName); pathExistsFile(p) {
+			return p, nil
+		}
+	}
+	return toAbsExe(exeName, exeName)
+}
+
+// trimEnvPath は環境変数値の前後空白と前後のダブルクォートを除く。
+func trimEnvPath(s string) string {
+	s = strings.TrimSpace(s)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	return strings.TrimSpace(s)
+}
+
+func pathExistsFile(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi != nil && !fi.IsDir()
+}
+
+// rtaccExeDir は rtacc 実行ファイルのディレクトリを返す。取得に失敗した場合は空。
+func rtaccExeDir() (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Dir(exe), nil
+}
+
+// toAbsExe は path が既に絶対パスならそのまま返し、そうでなければ LookPath で絶対パス化する。
+func toAbsExe(path, exeNameForError string) (string, error) {
+	if strings.Contains(path, string(os.PathSeparator)) {
+		return path, nil
+	}
+	abs, err := exec.LookPath(path)
+	if err != nil {
+		return "", fmt.Errorf("%s が見つかりません: %s (%w)", exeNameForError, path, err)
+	}
+	return abs, nil
+}
+
 // buildLLVM は clang + lld で .c → .ll → .asm → .obj → .rta/.rsl を実行する。
 func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, projectDir string, paths Paths, optimize string, isRsl bool, opts Options) error {
 	clang := paths.Clang
@@ -242,28 +305,10 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			asmPath := filepath.Join(outDir, base+".asm")
 			objPath := filepath.Join(outDir, base+".obj")
 
-			// llst.exe のパス決定
-			// 1. 環境変数 LLST があればそれを使用
-			// 2. なければ projectDir/llst.exe を優先
-			// 3. それも無ければ "llst.exe" を PATH から検索
-			llstExe := strings.TrimSpace(os.Getenv("LLST"))
-			if llstExe == "" {
-				cand := filepath.Join(projectDir, "llst.exe")
-				if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
-					llstExe = cand
-				} else {
-					llstExe = "llst.exe"
-				}
-			}
-			// Go 1.20 以降、カレントディレクトリ上の実行ファイルを PATH 経由で見つけた場合は
-			// "cannot run executable found relative to current directory" になるため、
-			// パスに区切り文字が含まれない場合だけ LookPath で絶対パス化する。
-			if !strings.Contains(llstExe, string(os.PathSeparator)) {
-				if abs, err := exec.LookPath(llstExe); err == nil {
-					llstExe = abs
-				} else {
-					return fmt.Errorf("ST コンパイラ llst.exe が見つかりません: %s (%w)", llstExe, err)
-				}
+			// llst.exe: LLST → RTACC_BIN → rtacc 同 dir → projectDir → PATH
+			llstExe, err := resolveHelperExe("LLST", "llst.exe", projectDir)
+			if err != nil {
+				return fmt.Errorf("ST コンパイラ: %w", err)
 			}
 
 			// 1) .st -> .ll （外部 ST コンパイラ）
@@ -295,26 +340,10 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			asmPath := filepath.Join(outDir, base+".asm")
 			objPath := filepath.Join(outDir, base+".obj")
 
-			// llil.exe のパス決定
-			// 1. 環境変数 LLIL があればそれを使用
-			// 2. なければ projectDir/llil.exe を優先
-			// 3. それも無ければ "llil.exe" を PATH から検索
-			llilExe := strings.TrimSpace(os.Getenv("LLIL"))
-			if llilExe == "" {
-				cand := filepath.Join(projectDir, "llil.exe")
-				if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
-					llilExe = cand
-				} else {
-					llilExe = "llil.exe"
-				}
-			}
-			// カレントディレクトリ相対の実行を避けるため、パスに区切り文字がない場合のみ LookPath で絶対パス化。
-			if !strings.Contains(llilExe, string(os.PathSeparator)) {
-				if abs, err := exec.LookPath(llilExe); err == nil {
-					llilExe = abs
-				} else {
-					return fmt.Errorf("IL コンパイラ llil.exe が見つかりません: %s (%w)", llilExe, err)
-				}
+			// llil.exe: LLIL → RTACC_BIN → rtacc 同 dir → projectDir → PATH
+			llilExe, err := resolveHelperExe("LLIL", "llil.exe", projectDir)
+			if err != nil {
+				return fmt.Errorf("IL コンパイラ: %w", err)
 			}
 
 			// 1) .il -> .ll （外部 IL コンパイラ）

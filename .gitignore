@@ -5,3 +5,9 @@ cab1.cab
 rtacc.wixobj
 .gitignore
 rtacc.wixpdb
+
+# ビルド成果物（build.ps1 の出力先は bin/ のみ。ルートの exe は古い残り・誤ビルド用に無視）
+bin/
+rtacc.exe
+llil.exe
+llst.exe

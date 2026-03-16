@@ -1,5 +1,5 @@
-; ModuleID = 'D:\work\rtacc\examples\ST\main.c'
-source_filename = "D:\\work\\rtacc\\examples\\ST\\main.c"
+; ModuleID = 'main.c'
+source_filename = "main.c"
 target datalayout = "e-m:x-p:32:32-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32-a:0:32-S32"
 target triple = "i386-pc-windows-msvc19.44.35223"
 
@@ -34,7 +34,7 @@ attributes #3 = { nounwind }
 !llvm.ident = !{!6}
 
 !0 = distinct !DICompileUnit(language: DW_LANG_C11, file: !1, producer: "clang version 22.1.0 (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)", isOptimized: true, runtimeVersion: 0, emissionKind: NoDebug, splitDebugInlining: false, nameTableKind: None)
-!1 = !DIFile(filename: "D:\\work\\rtacc\\examples\\ST\\main.c", directory: "D:\\work\\rtacc\\examples\\ST")
+!1 = !DIFile(filename: "main.c", directory: "D:\\work\\rtacc\\examples\\ST")
 !2 = !{i32 1, !"NumRegisterParameters", i32 0}
 !3 = !{i32 2, !"Debug Info Version", i32 3}
 !4 = !{i32 1, !"wchar_size", i32 2}

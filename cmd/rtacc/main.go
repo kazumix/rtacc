@@ -327,8 +327,11 @@ func printUsage() {
   -linker-flags "フラグ"   リンカオプション（; で複数）
 
 環境変数:
-  INTIME  INtime ルート（既定: C:\Program Files (x86)\INtime）
-  LLVM    LLVM bin ディレクトリ（既定: C:\Program Files\LLVM\bin）
+  INTIME     INtime ルート（既定: C:\Program Files (x86)\INtime）
+  LLVM       LLVM bin ディレクトリ（既定: C:\Program Files\LLVM\bin）
+  RTACC_BIN  rtacc/llil/llst 一式を置いたディレクトリ（.st/.il 用。未設定時は rtacc と同じ dir → projectDir → PATH）
+  LLST       llst.exe のフルパス（上書き。ST 用）
+  LLIL       llil.exe のフルパス（上書き。IL 用）
   ※ CLI モードでは、project.json が存在しない場合でも、LLVM/VS2017 それぞれに
      VERSION/HEAP/STACK を含んだ既定の linker_flags を内部的に付与します。
      project.json に linker_flags を書いた場合は、そちらが優先されます。

@@ -44,6 +44,8 @@ func runJSON(jsonPath string, rest []string) error {
 	outputDir := fs.String("output-dir", "", "出力ディレクトリの上書き")
 	optimize := fs.String("optimize", "", "最適化レベル (0,1,2,3,s,z)")
 	compileOnly := fs.Bool("c", false, "コンパイルのみ（.obj まで。リンクしない）")
+	emitLLOnly := fs.Bool("s", false, "LLVM IR (.ll) まで生成して終了")
+	combineIR := fs.Bool("combine-ir", false, "（将来）全 .ll を1つの .obj に結合（方式B）。llvm-link が必要")
 	includes := fs.String("I", "", "インクルードパス（; 区切り）。JSON より優先")
 	defines := fs.String("D", "", "定義（; 区切り）。JSON より優先")
 	libs := fs.String("libs", "", "リンクする lib（; 区切り）。JSON より優先")
@@ -65,8 +67,10 @@ func runJSON(jsonPath string, rest []string) error {
 		TargetName:  strings.TrimSpace(*targetName),
 		Output:      strings.TrimSpace(*output),
 		OutputDir:   strings.TrimSpace(*outputDir),
-		CompileOnly: *compileOnly,
-		Optimize:    strings.TrimSpace(*optimize),
+		CompileOnly:  *compileOnly,
+		EmitLLOnly:   *emitLLOnly,
+		CombineIR:    *combineIR,
+		Optimize:     strings.TrimSpace(*optimize),
 	}
 	if *includes != "" {
 		opts.Includes = splitSemicolon(*includes)
@@ -136,9 +140,46 @@ func extractOutput(args []string) (output string, rest []string) {
 	return "", args
 }
 
+// hasFlag は args に flagName が含まれるかどうか。ソースの後ろに書いた -s / -c も認識するため。
+func hasFlag(args []string, flagName string) bool {
+	for _, a := range args {
+		if a == flagName {
+			return true
+		}
+	}
+	return false
+}
+
+// extractOutputDir は args から --output-dir / -output-dir= を先に取り出す。
+func extractOutputDir(args []string) (outputDir string, rest []string) {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if (a == "--output-dir" || a == "-output-dir") && i+1 < len(args) {
+			outputDir = args[i+1]
+			rest = append(rest, args[:i]...)
+			rest = append(rest, args[i+2:]...)
+			return outputDir, rest
+		}
+		if strings.HasPrefix(a, "--output-dir=") {
+			outputDir = strings.TrimPrefix(a, "--output-dir=")
+			rest = append(rest, args[:i]...)
+			rest = append(rest, args[i+1:]...)
+			return outputDir, rest
+		}
+		if strings.HasPrefix(a, "-output-dir=") {
+			outputDir = strings.TrimPrefix(a, "-output-dir=")
+			rest = append(rest, args[:i]...)
+			rest = append(rest, args[i+1:]...)
+			return outputDir, rest
+		}
+	}
+	return "", args
+}
+
 func runCLI(args []string) error {
-	// -o をソースの後ろにあっても認識するよう先に抽出
-	outputFromArgs, argsForParse := extractOutput(args)
+	// -o / --output-dir をソースの後ろにあっても認識するよう先に抽出
+	outputFromArgs, args1 := extractOutput(args)
+	outputDirFromArgs, argsForParse := extractOutputDir(args1)
 
 	fs := flag.NewFlagSet("rtacc-cli", flag.ExitOnError)
 	output := fs.String("o", "", "出力ファイル (.rta / .rsl)")
@@ -146,6 +187,8 @@ func runCLI(args []string) error {
 	toolset := fs.String("toolset", "", "ツールセット (llvm / vs2017)")
 	optimize := fs.String("O", "2", "最適化レベル (0,1,2,3,s,z)")
 	compileOnly := fs.Bool("c", false, "コンパイルのみ（.obj まで。リンクしない）")
+	emitLLOnly := fs.Bool("s", false, "LLVM IR (.ll) まで生成して終了")
+	combineIR := fs.Bool("combine-ir", false, "（将来）全 .ll を1つの .obj に結合（方式B）。llvm-link が必要")
 	includes := fs.String("I", "", "インクルードパス（; 区切り）")
 	defines := fs.String("D", "", "定義（; 区切り）")
 	libs := fs.String("libs", "", "リンクする lib（; 区切り）")
@@ -154,6 +197,16 @@ func runCLI(args []string) error {
 	linkerFlags := fs.String("linker-flags", "", "リンカオプション（; 区切り）")
 	if err := fs.Parse(argsForParse); err != nil {
 		return err
+	}
+	// -s / -c / -combine-ir はソースの後ろに書いても効くよう、args をスキャンして上書き
+	if hasFlag(argsForParse, "-s") {
+		*emitLLOnly = true
+	}
+	if hasFlag(argsForParse, "-c") {
+		*compileOnly = true
+	}
+	if hasFlag(argsForParse, "-combine-ir") {
+		*combineIR = true
 	}
 	sources := fs.Args()
 	if len(sources) == 0 {
@@ -164,6 +217,9 @@ func runCLI(args []string) error {
 		*output = outputFromArgs
 	} else if *output == "" {
 		*output = "app.rta"
+	}
+	if outputDirFromArgs != "" {
+		*outputDir = outputDirFromArgs
 	}
 	projectDir, _ := os.Getwd()
 	toolsetToUse := strings.TrimSpace(*toolset)
@@ -258,8 +314,10 @@ func runCLI(args []string) error {
 		Toolset:     toolsetToUse,
 		Output:      *output,
 		OutputDir:   outputDirToUse,
-		CompileOnly: *compileOnly,
-		Optimize:    *optimize,
+		CompileOnly:  *compileOnly,
+		EmitLLOnly:   *emitLLOnly,
+		CombineIR:    *combineIR,
+		Optimize:     *optimize,
 	}
 	if *includes != "" {
 		opts.Includes = splitSemicolon(*includes)
@@ -319,6 +377,8 @@ func printUsage() {
   -toolset llvm|vs2017  ツールセット
   -output-dir dir    中間・出力ディレクトリ
   -optimize, -O 0|1|2|3|s|z  最適化レベル（省略時は "2"）
+  -s                 LLVM IR (.ll) まで生成して終了（C/ST/IL 用）
+  -combine-ir        （将来）全 .ll を1つの .obj に結合（方式B）。llvm-link が必要
   -I path            インクルード（; で複数）
   -D MACRO           定義（; で複数）
   -libs "a.lib;b.lib" リンクする lib（; で複数）

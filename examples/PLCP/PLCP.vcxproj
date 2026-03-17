@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|INtime">
+      <Configuration>Debug</Configuration>
+      <Platform>INtime</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|INtime">
+      <Configuration>Release</Configuration>
+      <Platform>INtime</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="apif.c" />
+    <ClCompile Include="argument.c" />
+    <ClCompile Include="bitfield.c" />
+    <ClCompile Include="bluescreen.c" />
+    <ClCompile Include="comment.c" />
+    <ClCompile Include="config.c" />
+    <ClCompile Include="container.c" />
+    <ClCompile Include="engine.c" />
+    <ClCompile Include="errorlog.c" />
+    <ClCompile Include="exception.c" />
+    <ClCompile Include="functionblock.c" />
+    <ClCompile Include="basicfunction.c" />
+    <ClCompile Include="heap.c" />
+    <ClCompile Include="indicate.c" />
+    <ClCompile Include="inifile.c" />
+    <ClCompile Include="instruction.c" />
+    <ClCompile Include="internalclock.c" />
+    <ClCompile Include="label.c" />
+    <ClCompile Include="literal.c" />
+    <ClCompile Include="logic.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="md5c.c" />
+    <ClCompile Include="mnmfile.c" />
+    <ClCompile Include="pause.c" />
+    <ClCompile Include="plccontrol.c" />
+    <ClCompile Include="poufile.c" />
+    <ClCompile Include="project.c" />
+    <ClCompile Include="property.c" />
+    <ClCompile Include="reservedword.c" />
+    <ClCompile Include="retain.c" />
+    <ClCompile Include="rtedge.c" />
+    <ClCompile Include="scope.c" />
+    <ClCompile Include="sqtbl.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="status.c" />
+    <ClCompile Include="step.c" />
+    <ClCompile Include="string.c" />
+    <ClCompile Include="structure.c" />
+    <ClCompile Include="trigger.c" />
+    <ClCompile Include="type.c" />
+    <ClCompile Include="userFB.c" />
+    <ClCompile Include="userfunc.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="util.c" />
+    <ClCompile Include="variable.c" />
+    <ClCompile Include="variant.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="watchdog.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common.h" />
+    <ClInclude Include="md5.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{02E489EE-E948-4E20-BA42-6C5A164AEA5A}</ProjectGuid>
+    <SccProjectName>Svn</SccProjectName>
+    <SccAuxPath>Svn</SccAuxPath>
+    <SccLocalPath>Svn</SccLocalPath>
+    <SccProvider>SubversionScc</SccProvider>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <INtimeArgs>-INTPRT/C:\RT-edge\PLC.IL</INtimeArgs>
+    <INtimeRsldb>$(outdir)\PLC.rta</INtimeRsldb>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <INtimeArgs>-INTPRT/D:\work\KA2310(PLCplus)\0070Prog\0001_TEST_Prog\20231211_総合テストv1.0\TEST1006\TEST1006.IL</INtimeArgs>
+    <INtimeRsldb>$(outdir)\plc.rta</INtimeRsldb>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <ClCompile>
+    </ClCompile>
+    <Link>
+      <Version>21076.20052</Version>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <AdditionalIncludeDirectories>..\..\0060ツールソフト\RT-edge\Library;$(INtime)rt\include</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AssemblerOutput>All</AssemblerOutput>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(SolutionDir)$(Configuration)\\PLCP.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <ClCompile>
+    </ClCompile>
+    <Link>
+      <Version>21076.20052</Version>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <AdditionalIncludeDirectories>..\..\0060ツールソフト\RT-edge\Library;$(INtime)rt\include</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(SolutionDir)$(Configuration)\\PLCP.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

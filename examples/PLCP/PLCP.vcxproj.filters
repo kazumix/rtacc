@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{9dd09e20-b565-41a2-9413-90fc1faafeeb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="apif.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="argument.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bluescreen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="config.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="engine.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="errorlog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inifile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instruction.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="internalclock.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="logic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mnmfile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pause.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="status.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="step.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="userfunc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="watchdog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="variable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util.c">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="md5c.c">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="literal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="variant.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rtedge.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="functionblock.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="basicfunction.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="structure.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sqtbl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="string.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="heap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="reservedword.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="label.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="comment.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="type.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="poufile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scope.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="project.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="userFB.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="plccontrol.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="retain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="container.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="indicate.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="property.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigger.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="exception.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bitfield.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="md5.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

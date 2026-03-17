@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,8 @@ type Options struct {
 	Output        string   // 上書き（CLI -o）
 	OutputDir     string   // 上書き（CLI --output-dir）
 	CompileOnly   bool     // コンパイルのみ（.obj まで。リンクなし）
+	EmitLLOnly    bool     // -s: LLVM IR (.ll) まで生成して終了
+	CombineIR     bool     // -combine-ir: （将来）全 .ll を1つの .obj に結合（方式B）。llvm-link が必要。未指定時は方式A（各ソースごとに .obj）
 	Optimize      string   // 上書き（CLI -O / --optimize）
 	Includes      []string // 上書き（CLI -I）。指定時は JSON の includes より優先
 	Defines       []string // 上書き（CLI -D）
@@ -32,6 +35,7 @@ type Options struct {
 // Paths は clang / INtime のパス。
 type Paths struct {
 	Clang         string // clang.exe フルパス
+	LlvmLink      string // llvm-link.exe（複数ソース時の方式B で IR 結合。無い場合はエラー）
 	IntimeInclude string // RT\include
 	IntimeLib     string // RT\LIB
 }
@@ -48,6 +52,7 @@ func DefaultPaths() Paths {
 	}
 	return Paths{
 		Clang:         filepath.Join(llvm, "clang.exe"),
+		LlvmLink:      filepath.Join(llvm, "llvm-link.exe"),
 		IntimeInclude: filepath.Join(intime, "RT", "include"),
 		IntimeLib:     filepath.Join(intime, "RT", "LIB"),
 	}
@@ -124,6 +129,9 @@ func BuildTarget(proj *config.Project, target *config.Target, projectDir string,
 
 	// compiler が cl のときは cl+link（vs2012 / vs2017 / vs2022 など）。それ以外は clang+lld。
 	useVS := strings.TrimSpace(ts.Compiler) == "cl"
+	if opts.EmitLLOnly && useVS {
+		return fmt.Errorf("-s (LLVM IR のみ) は llvm ツールセットでのみ利用できます")
+	}
 	if useVS {
 		fmt.Printf("toolset: %s (cl+link)\n", toolsetName)
 		return buildVS(&t, &tsCopy, outputPath, outDir, projectDir, paths, optimize, isRsl, opts, toolsetName)
@@ -182,6 +190,25 @@ func pathExistsFile(p string) bool {
 	return err == nil && fi != nil && !fi.IsDir()
 }
 
+// copyFile は src を dst にコピーする。
+func copyFile(dst, src string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	if err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
+}
+
 // rtaccExeDir は rtacc 実行ファイルのディレクトリを返す。取得に失敗した場合は空。
 func rtaccExeDir() (string, error) {
 	exe, err := os.Executable()
@@ -235,6 +262,7 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 	compilerFlags = append(compilerFlags, opts.ExtraFlags...)
 
 	var objFiles []string
+	var llPaths []string // -combine-ir（方式B）用に .ll を集める
 
 	for _, src := range t.Sources {
 		ext := strings.ToLower(filepath.Ext(src))
@@ -257,6 +285,14 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			if err := run(clang, args1, "C→LL"); err != nil {
 				return err
 			}
+			if opts.EmitLLOnly {
+				fmt.Printf("Generated: %s\n", llPath)
+				continue
+			}
+			if opts.CombineIR {
+				llPaths = append(llPaths, llPath)
+				continue
+			}
 			// 2) .ll -> .asm
 			args2 := []string{"-x", "ir"}
 			args2 = append(args2, baseCompile...)
@@ -272,11 +308,25 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			objFiles = append(objFiles, objPath)
 		case ".ll":
 			// 事前に別ツール（ST コンパイラなど）で生成された LLVM IR から、
-			// .asm / .obj を生成するパス。
+			// .asm / .obj を生成するパス。 -s のときは outDir にコピーして終了。
 			base := strings.TrimSuffix(filepath.Base(src), ext)
 			llPath := src
 			if !filepath.IsAbs(llPath) {
 				llPath = filepath.Join(projectDir, llPath)
+			}
+			if opts.EmitLLOnly {
+				dstPath := filepath.Join(outDir, base+".ll")
+				if llPath != dstPath {
+					if err := copyFile(dstPath, llPath); err != nil {
+						return err
+					}
+				}
+				fmt.Printf("Generated: %s\n", dstPath)
+				continue
+			}
+			if opts.CombineIR {
+				llPaths = append(llPaths, llPath)
+				continue
 			}
 			asmPath := filepath.Join(outDir, base+".asm")
 			objPath := filepath.Join(outDir, base+".obj")
@@ -316,6 +366,14 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			if err := run(llstExe, args0, "ST→LL"); err != nil {
 				return err
 			}
+			if opts.EmitLLOnly {
+				fmt.Printf("Generated: %s\n", llPath)
+				continue
+			}
+			if opts.CombineIR {
+				llPaths = append(llPaths, llPath)
+				continue
+			}
 			// 2) .ll -> .asm
 			args2 := []string{"-x", "ir"}
 			args2 = append(args2, baseCompile...)
@@ -351,6 +409,14 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			if err := run(llilExe, args0, "IL→LL"); err != nil {
 				return err
 			}
+			if opts.EmitLLOnly {
+				fmt.Printf("Generated: %s\n", llPath)
+				continue
+			}
+			if opts.CombineIR {
+				llPaths = append(llPaths, llPath)
+				continue
+			}
 			// 2) .ll -> .asm
 			args2 := []string{"-x", "ir"}
 			args2 = append(args2, baseCompile...)
@@ -371,6 +437,41 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			}
 			objFiles = append(objFiles, pathSrc)
 		}
+	}
+
+	// -s / EmitLLOnly 指定時は .ll 生成までで終了
+	if opts.EmitLLOnly {
+		return nil
+	}
+
+	// -combine-ir（方式B）: 集めた .ll を1つの .obj に。2つ以上なら llvm-link で結合してから clang。llvm-link が配布に含まれないため将来オプション。
+	if opts.CombineIR && len(llPaths) > 0 {
+		combinedObj := filepath.Join(outDir, "combined.obj")
+		var irInput string
+		if len(llPaths) == 1 {
+			irInput = llPaths[0]
+		} else {
+			if _, err := os.Stat(paths.LlvmLink); err != nil {
+				if os.IsNotExist(err) {
+					return fmt.Errorf("llvm-link が見つかりません: %s (-combine-ir で複数ソース時に必要。配布に含まれない場合は方式A のまま利用してください)", paths.LlvmLink)
+				}
+				return err
+			}
+			combinedBC := filepath.Join(outDir, "combined.bc")
+			linkArgs := append([]string(nil), llPaths...)
+			linkArgs = append(linkArgs, "-o", combinedBC)
+			if err := run(paths.LlvmLink, linkArgs, "llvm-link"); err != nil {
+				return err
+			}
+			irInput = combinedBC
+		}
+		argsCombine := []string{"-x", "ir"}
+		argsCombine = append(argsCombine, baseCompile...)
+		argsCombine = append(argsCombine, irInput, "-c", "-o", combinedObj)
+		if err := run(clang, argsCombine, "LL→obj (combined)"); err != nil {
+			return err
+		}
+		objFiles = append(objFiles, combinedObj)
 	}
 
 	// -c / CompileOnly 指定時は .obj 生成までで終了（リンクしない）

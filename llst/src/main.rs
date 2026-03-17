@@ -17,15 +17,26 @@ enum TokenKind {
     Function,    // FUNCTION
     EndFunction, // END_FUNCTION
     Return,      // RETURN
+    Xor,         // XOR
     Plus,
     Minus,
     Star,
     Slash,
     LParen,
     RParen,
+    LBracket, // [
+    RBracket, // ]
+    DotDot,   // ..
+    Comma,    // ,
     TypeInt,  // INT
     TypeBool, // BOOL
+    Array,    // ARRAY
+    Of,       // OF
     Not,      // NOT
+    For,      // FOR
+    To,       // TO
+    Do,       // DO
+    EndFor,   // END_FOR
 }
 
 #[derive(Debug, Clone)]
@@ -53,6 +64,13 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
             i += 1;
             continue;
         }
+        if c == '/' && i + 1 < bytes.len() && bytes[i + 1] as char == '/' {
+            i += 2;
+            while i < bytes.len() && (bytes[i] as char) != '\n' {
+                i += 1;
+            }
+            continue;
+        }
         let pos = i;
 
         if is_ident_start(c) {
@@ -72,9 +90,16 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
                 "FUNCTION" => TokenKind::Function,
                 "END_FUNCTION" => TokenKind::EndFunction,
                 "RETURN" => TokenKind::Return,
+                "XOR" => TokenKind::Xor,
                 "INT" => TokenKind::TypeInt,
                 "BOOL" => TokenKind::TypeBool,
+                "ARRAY" => TokenKind::Array,
+                "OF" => TokenKind::Of,
                 "NOT" => TokenKind::Not,
+                "FOR" => TokenKind::For,
+                "TO" => TokenKind::To,
+                "DO" => TokenKind::Do,
+                "END_FOR" => TokenKind::EndFor,
                 _ => TokenKind::Ident(ident.to_string()),
             };
             tokens.push(Token { kind, pos });
@@ -161,6 +186,38 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
                 });
                 i += 1;
             }
+            '[' => {
+                tokens.push(Token {
+                    kind: TokenKind::LBracket,
+                    pos,
+                });
+                i += 1;
+            }
+            ']' => {
+                tokens.push(Token {
+                    kind: TokenKind::RBracket,
+                    pos,
+                });
+                i += 1;
+            }
+            ',' => {
+                tokens.push(Token {
+                    kind: TokenKind::Comma,
+                    pos,
+                });
+                i += 1;
+            }
+            '.' => {
+                if i + 1 < bytes.len() && bytes[i + 1] as char == '.' {
+                    tokens.push(Token {
+                        kind: TokenKind::DotDot,
+                        pos,
+                    });
+                    i += 2;
+                } else {
+                    return Err(format!("未知の文字 '{}' (バイト位置 {pos})", c));
+                }
+            }
             _ => {
                 return Err(format!("未知の文字 '{}' (バイト位置 {pos})", c));
             }
@@ -179,7 +236,9 @@ enum Expr {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
-    UnaryNot(Box<Expr>), // BOOL 用
+    UnaryNot(Box<Expr>),   // BOOL 用
+    Index(String, Box<Expr>), // 配列添字 base[index]
+    ArrayLit(Vec<Expr>),   // [ e1, e2, ... ]
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -188,17 +247,25 @@ enum BinOp {
     Sub,
     Mul,
     Div,
+    Xor,
 }
 
 #[derive(Debug)]
 enum Stmt {
     VarDecl {
         name: String,
+        array_bounds: Option<(i64, i64)>, // None = INT, Some(lo, hi) = ARRAY [lo..hi] OF INT
         init: Expr,
     },
     Assign {
         name: String,
         expr: Expr,
+    },
+    For {
+        var: String,
+        start: Expr,
+        end: Expr,
+        body: Vec<Stmt>,
     },
     Return(Expr),
 }
@@ -210,9 +277,8 @@ struct ProgramAst {
 
 #[derive(Debug)]
 struct FunctionAst {
-    // いまは invert.st のような「BOOL を返す 1 引数 BOOL 関数」にだけ対応
     name: String,
-    param_name: String,
+    params: Vec<String>,
     body: Vec<Stmt>,
 }
 
@@ -281,6 +347,9 @@ impl Parser {
                 TokenKind::Return => {
                     stmts.push(self.parse_return_stmt()?);
                 }
+                TokenKind::For => {
+                    stmts.push(self.parse_for_stmt()?);
+                }
                 TokenKind::Ident(_) => {
                     stmts.push(self.parse_assign_stmt()?);
                 }
@@ -293,6 +362,52 @@ impl Parser {
             }
         }
         Ok(ProgramAst { stmts })
+    }
+
+    fn parse_for_stmt(&mut self) -> Result<Stmt, String> {
+        self.expect(&TokenKind::For)?;
+        let var = match self.bump() {
+            Some(Token {
+                kind: TokenKind::Ident(s),
+                ..
+            }) => s,
+            Some(t) => return Err(format!("FOR の変数に識別子を期待しましたが {:?} でした", t.kind)),
+            None => return Err("FOR の変数を期待しましたが入力が終わっています".to_string()),
+        };
+        self.expect(&TokenKind::Assign)?;
+        let start = self.parse_expr()?;
+        self.expect(&TokenKind::To)?;
+        let end = self.parse_expr()?;
+        self.expect(&TokenKind::Do)?;
+        let mut body = Vec::new();
+        loop {
+            match self.peek() {
+                Some(Token {
+                    kind: TokenKind::EndFor,
+                    ..
+                }) => {
+                    self.bump();
+                    break;
+                }
+                Some(Token {
+                    kind: TokenKind::Ident(_),
+                    ..
+                }) => body.push(self.parse_assign_stmt()?),
+                Some(tok) => {
+                    return Err(format!(
+                        "FOR 本体で予期しないトークン {:?} (位置 {})",
+                        tok.kind, tok.pos
+                    ));
+                }
+                None => return Err("END_FOR を待っているときに入力が終わりました".to_string()),
+            }
+        }
+        Ok(Stmt::For {
+            var,
+            start,
+            end,
+            body,
+        })
     }
 
     fn parse_function(&mut self) -> Result<FunctionAst, String> {
@@ -314,24 +429,42 @@ impl Parser {
         // VAR_INPUT
         self.expect(&TokenKind::VarInput)?;
 
-        // パラメータ (1 個の BOOL のみ対応):
-        //   x : BOOL;
-        let param_name = match self.bump() {
-            Some(Token {
-                kind: TokenKind::Ident(s),
-                ..
-            }) => s,
-            Some(t) => {
-                return Err(format!("引数名として識別子を期待しましたが {:?} でした", t.kind));
+        // パラメータ (複数対応):
+        let mut params = Vec::new();
+        loop {
+            match self.peek() {
+                Some(Token {
+                    kind: TokenKind::EndVar,
+                    ..
+                }) => {
+                    self.bump();
+                    break;
+                }
+                Some(Token {
+                    kind: TokenKind::Ident(_),
+                    ..
+                }) => {
+                    let param_name = match self.bump() {
+                        Some(Token {
+                            kind: TokenKind::Ident(s),
+                            ..
+                        }) => s,
+                        Some(t) => {
+                            return Err(format!("引数名として識別子を期待しましたが {:?} でした", t.kind));
+                        }
+                        None => return Err("引数名を期待しましたが入力が終わっています".to_string()),
+                    };
+                    self.expect(&TokenKind::Colon)?;
+                    self.expect(&TokenKind::TypeBool)?;
+                    self.expect(&TokenKind::Semicolon)?;
+                    params.push(param_name);
+                }
+                Some(t) => {
+                    return Err(format!("VAR_INPUT ブロック内で識別子または END_VAR を期待しましたが {:?} でした", t.kind));
+                }
+                None => return Err("VAR_INPUT ブロックが終了していません".to_string()),
             }
-            None => return Err("引数名を期待しましたが入力が終わっています".to_string()),
-        };
-        self.expect(&TokenKind::Colon)?;
-        self.expect(&TokenKind::TypeBool)?;
-        self.expect(&TokenKind::Semicolon)?;
-
-        // END_VAR
-        self.expect(&TokenKind::EndVar)?;
+        }
 
         // 関数本体: END_FUNCTION までを単純な文列として読む
         let mut body = Vec::new();
@@ -370,7 +503,7 @@ impl Parser {
 
         Ok(FunctionAst {
             name,
-            param_name,
+            params,
             body,
         })
     }
@@ -417,7 +550,39 @@ impl Parser {
             None => return Err("識別子を期待しましたが入力が終わっています".to_string()),
         };
         self.expect(&TokenKind::Colon)?;
-        self.expect(&TokenKind::TypeInt)?;
+
+        let array_bounds = if let Some(Token {
+            kind: TokenKind::Array,
+            ..
+        }) = self.peek()
+        {
+            self.bump();
+            self.expect(&TokenKind::LBracket)?;
+            let lo = match self.bump() {
+                Some(Token {
+                    kind: TokenKind::Int(v),
+                    ..
+                }) => v,
+                Some(t) => return Err(format!("ARRAY の下限に整数を期待しましたが {:?} でした", t.kind)),
+                None => return Err("ARRAY の下限を期待しましたが入力が終わっています".to_string()),
+            };
+            self.expect(&TokenKind::DotDot)?;
+            let hi = match self.bump() {
+                Some(Token {
+                    kind: TokenKind::Int(v),
+                    ..
+                }) => v,
+                Some(t) => return Err(format!("ARRAY の上限に整数を期待しましたが {:?} でした", t.kind)),
+                None => return Err("ARRAY の上限を期待しましたが入力が終わっています".to_string()),
+            };
+            self.expect(&TokenKind::RBracket)?;
+            self.expect(&TokenKind::Of)?;
+            self.expect(&TokenKind::TypeInt)?;
+            Some((lo, hi))
+        } else {
+            self.expect(&TokenKind::TypeInt)?;
+            None
+        };
 
         let mut init = Expr::Int(0);
         if let Some(Token {
@@ -429,7 +594,11 @@ impl Parser {
             init = self.parse_expr()?;
         }
         self.expect(&TokenKind::Semicolon)?;
-        Ok(Stmt::VarDecl { name, init })
+        Ok(Stmt::VarDecl {
+            name,
+            array_bounds,
+            init,
+        })
     }
 
     fn parse_assign_stmt(&mut self) -> Result<Stmt, String> {
@@ -486,6 +655,18 @@ impl Parser {
                         rhs: Box::new(rhs),
                     };
                 }
+                Some(Token {
+                    kind: TokenKind::Xor,
+                    ..
+                }) => {
+                    self.bump();
+                    let rhs = self.parse_mul_div()?;
+                    node = Expr::Binary {
+                        op: BinOp::Xor,
+                        lhs: Box::new(node),
+                        rhs: Box::new(rhs),
+                    };
+                }
                 _ => break,
             }
         }
@@ -527,36 +708,73 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> Result<Expr, String> {
-        match self.bump() {
-            Some(Token {
-                kind: TokenKind::Int(v),
-                ..
-            }) => Ok(Expr::Int(v)),
-            Some(Token {
-                kind: TokenKind::Ident(s),
-                ..
-            }) => Ok(Expr::Var(s)),
-            Some(Token {
-                kind: TokenKind::Not,
-                ..
-            }) => {
-                // NOT <expr>
+        let first = match self.bump() {
+            Some(t) => t,
+            None => return Err("式を期待しましたが入力が終わっています".to_string()),
+        };
+        match first.kind {
+            TokenKind::Int(v) => Ok(Expr::Int(v)),
+            TokenKind::Ident(s) => {
+                if let Some(Token {
+                    kind: TokenKind::LBracket,
+                    ..
+                }) = self.peek()
+                {
+                    self.bump();
+                    let index_expr = self.parse_expr()?;
+                    self.expect(&TokenKind::RBracket)?;
+                    Ok(Expr::Index(s, Box::new(index_expr)))
+                } else {
+                    Ok(Expr::Var(s))
+                }
+            }
+            TokenKind::Not => {
                 let expr = self.parse_primary()?;
                 Ok(Expr::UnaryNot(Box::new(expr)))
             }
-            Some(Token {
-                kind: TokenKind::LParen,
-                ..
-            }) => {
+            TokenKind::LParen => {
                 let expr = self.parse_expr()?;
                 self.expect(&TokenKind::RParen)?;
                 Ok(expr)
             }
-            Some(t) => Err(format!(
+            TokenKind::LBracket => {
+                let mut elems = Vec::new();
+                loop {
+                    if let Some(Token {
+                        kind: TokenKind::RBracket,
+                        ..
+                    }) = self.peek()
+                    {
+                        self.bump();
+                        break;
+                    }
+                    elems.push(self.parse_expr()?);
+                    match self.peek() {
+                        Some(Token {
+                            kind: TokenKind::Comma,
+                            ..
+                        }) => {
+                            self.bump();
+                        }
+                        Some(Token {
+                            kind: TokenKind::RBracket,
+                            ..
+                        }) => {}
+                        Some(tok) => {
+                            return Err(format!(
+                                "配列リテラルで ',' または ']' を期待しましたが {:?} でした (位置 {})",
+                                tok.kind, tok.pos
+                            ));
+                        }
+                        None => return Err("配列リテラルが ']' で閉じられていません".to_string()),
+                    }
+                }
+                Ok(Expr::ArrayLit(elems))
+            }
+            _ => Err(format!(
                 "式の先頭として不正なトークン {:?} (位置 {})",
-                t.kind, t.pos
+                first.kind, first.pos
             )),
-            None => Err("式を期待しましたが入力が終わっています".to_string()),
         }
     }
 }
@@ -598,8 +816,8 @@ impl<'a> BoolCodeGen<'a> {
     fn gen_expr(&mut self, m: &mut LlvmModule, expr: &Expr) -> Result<String, String> {
         match expr {
             Expr::Var(name) => {
-                if name == &self.func.param_name {
-                    Ok(format!("%{}", self.func.param_name))
+                if self.func.params.contains(name) {
+                    Ok(format!("%{}", name))
                 } else {
                     Err(format!("BOOL 関数内で未対応の変数参照 {}", name))
                 }
@@ -611,8 +829,22 @@ impl<'a> BoolCodeGen<'a> {
                 m.emit(format!("  {} = xor i1 {}, true", tmp, v));
                 Ok(tmp)
             }
-            Expr::Int(_) | Expr::Binary { .. } => Err(
-                "BOOL 関数では整数リテラルや算術演算はまだサポートしていません".to_string(),
+            Expr::Binary { op, lhs, rhs } => {
+                let l = self.gen_expr(m, lhs)?;
+                let r = self.gen_expr(m, rhs)?;
+                let tmp = self.fresh_tmp();
+                let op_str = match op {
+                    BinOp::Xor => "xor",
+                    _ => return Err("BOOL 関数では XOR 以外はサポートしていません".to_string()),
+                };
+                m.emit(format!("  {} = {} i1 {}, {}", tmp, op_str, l, r));
+                Ok(tmp)
+            }
+            Expr::Int(_) => Err(
+                "BOOL 関数では整数リテラルはまだサポートしていません".to_string(),
+            ),
+            Expr::Index(..) | Expr::ArrayLit(_) => Err(
+                "BOOL 関数では配列はまだサポートしていません".to_string(),
             ),
         }
     }
@@ -635,10 +867,8 @@ impl<'a> BoolCodeGen<'a> {
 
         let mut m = LlvmModule::new();
         m.emit("; llst: simple ST BOOL function -> LLVM IR");
-        m.emit(format!(
-            "define i1 @{}(i1 %{}) {{",
-            self.func.name, self.func.param_name
-        ));
+        let param_list = self.func.params.iter().map(|p| format!("i1 %{}", p)).collect::<Vec<_>>().join(", ");
+        m.emit(format!("define i1 @{}( {} ) {{", self.func.name, param_list));
         m.emit("entry:");
 
         let v = self.gen_expr(&mut m, expr)?;
@@ -651,7 +881,8 @@ impl<'a> BoolCodeGen<'a> {
 struct CodeGen<'a> {
     ast: &'a ProgramAst,
     next_tmp: u32,
-    vars: Vec<(String, String)>,
+    vars: Vec<(String, String)>,       // (name, ptr) for scalars
+    arrays: Vec<(String, String, u32)>, // (name, ptr, len) for arrays
 }
 
 impl<'a> CodeGen<'a> {
@@ -660,6 +891,7 @@ impl<'a> CodeGen<'a> {
             ast,
             next_tmp: 1,
             vars: Vec::new(),
+            arrays: Vec::new(),
         }
     }
 
@@ -677,6 +909,14 @@ impl<'a> CodeGen<'a> {
             .map(|(_, p)| p.as_str())
     }
 
+    fn find_array_ptr(&self, name: &str) -> Option<(&str, u32)> {
+        self.arrays
+            .iter()
+            .rev()
+            .find(|(n, _, _)| n == name)
+            .map(|(_, p, len)| (p.as_str(), *len))
+    }
+
     fn gen(&mut self) -> Result<LlvmModule, String> {
         let mut m = LlvmModule::new();
 
@@ -686,20 +926,96 @@ impl<'a> CodeGen<'a> {
 
         for stmt in &self.ast.stmts {
             match stmt {
-                Stmt::VarDecl { name, init } => {
-                    let ptr = self.fresh_tmp();
-                    m.emit(format!("  {} = alloca i32", ptr));
-                    self.vars.push((name.clone(), ptr.clone()));
-                    let v = self.gen_expr(&mut m, init)?;
-                    m.emit(format!("  store i32 {}, ptr {}", v, ptr));
+                Stmt::VarDecl {
+                    name,
+                    array_bounds,
+                    init,
+                } => {
+                    match array_bounds {
+                        None => {
+                            let ptr = self.fresh_tmp();
+                            m.emit(format!("  {} = alloca i32", ptr));
+                            self.vars.push((name.clone(), ptr.clone()));
+                            let v = self.gen_expr(&mut m, init)?;
+                            m.emit(format!("  store i32 {}, ptr {}", v, ptr));
+                        }
+                        Some((lo, hi)) => {
+                            let len = (hi - lo + 1) as u32;
+                            let ptr = self.fresh_tmp();
+                            m.emit(format!("  {} = alloca [{} x i32]", ptr, len));
+                            self.arrays.push((name.clone(), ptr.clone(), len));
+                            if let Expr::ArrayLit(elems) = init {
+                                for (idx, e) in elems.iter().enumerate() {
+                                    let v = self.gen_expr(&mut m, e)?;
+                                    let elem_ptr = self.fresh_tmp();
+                                    m.emit(format!(
+                                        "  {} = getelementptr inbounds [{} x i32], ptr {}, i32 0, i32 {}",
+                                        elem_ptr, len, ptr, idx
+                                    ));
+                                    m.emit(format!("  store i32 {}, ptr {}", v, elem_ptr));
+                                }
+                            }
+                        }
+                    }
                 }
                 Stmt::Assign { name, expr } => {
-                    let ptr = self
-                        .find_var_ptr(name)
-                        .ok_or_else(|| format!("未定義の変数 {}", name))?
-                        .to_string();
                     let v = self.gen_expr(&mut m, expr)?;
-                    m.emit(format!("  store i32 {}, ptr {}", v, ptr));
+                    if let Some(ptr) = self.find_var_ptr(name) {
+                        m.emit(format!("  store i32 {}, ptr {}", v, ptr));
+                    } else {
+                        return Err(format!("未定義の変数 {}", name));
+                    }
+                }
+                Stmt::For {
+                    var,
+                    start,
+                    end,
+                    body,
+                } => {
+                    let ptr = self.fresh_tmp();
+                    m.emit(format!("  {} = alloca i32", ptr));
+                    let start_v = self.gen_expr(&mut m, start)?;
+                    m.emit(format!("  store i32 {}, ptr {}", start_v, ptr));
+                    let loop_label = format!("loop.{}", self.next_tmp);
+                    self.next_tmp += 1;
+                    let body_label = format!("forbody.{}", self.next_tmp);
+                    self.next_tmp += 1;
+                    let end_label = format!("end.{}", self.next_tmp);
+                    self.next_tmp += 1;
+                    m.emit(format!("  br label %{}", loop_label));
+                    m.emit(format!("{}:", loop_label));
+                    self.vars.push((var.clone(), ptr.clone()));
+                    let cur = self.fresh_tmp();
+                    m.emit(format!("  {} = load i32, ptr {}", cur, ptr));
+                    let end_v = self.gen_expr(&mut m, end)?;
+                    let cond = self.fresh_tmp();
+                    m.emit(format!("  {} = icmp sgt i32 {}, {}", cond, cur, end_v));
+                    m.emit(format!(
+                        "  br i1 {}, label %{}, label %{}",
+                        cond, end_label, body_label
+                    ));
+                    m.emit(format!("{}:", body_label));
+                    for s in body {
+                        match s {
+                            Stmt::Assign { name: an, expr: ex } => {
+                                let v = self.gen_expr(&mut m, ex)?;
+                                if let Some(p) = self.find_var_ptr(an) {
+                                    m.emit(format!("  store i32 {}, ptr {}", v, p));
+                                } else {
+                                    return Err(format!("未定義の変数 {}", an));
+                                }
+                            }
+                            _ => return Err("FOR 本体では代入文のみ対応しています".to_string()),
+                        }
+                    }
+                    let inc = self.fresh_tmp();
+                    m.emit(format!("  {} = load i32, ptr {}", inc, ptr));
+                    let one = self.fresh_tmp();
+                    m.emit(format!("  {} = add i32 {}, 1", one, inc));
+                    m.emit(format!("  store i32 {}, ptr {}", one, ptr));
+                    m.emit(format!("  br label %{}", loop_label));
+                    m.emit(format!("{}:", end_label));
+                    self.vars.pop();
                 }
                 Stmt::Return(expr) => {
                     let v = self.gen_expr(&mut m, expr)?;
@@ -745,10 +1061,27 @@ impl<'a> CodeGen<'a> {
                     BinOp::Sub => "sub",
                     BinOp::Mul => "mul",
                     BinOp::Div => "sdiv",
+                    BinOp::Xor => "xor",
                 };
                 m.emit(format!("  {} = {} i32 {}, {}", tmp, op_str, lv, rv));
                 Ok(tmp)
             }
+            Expr::Index(name, index_expr) => {
+                let (arr_ptr, len) = self
+                    .find_array_ptr(name)
+                    .map(|(p, l)| (p.to_string(), l))
+                    .ok_or_else(|| format!("未定義の配列 {}", name))?;
+                let idx = self.gen_expr(m, index_expr)?;
+                let elem_ptr = self.fresh_tmp();
+                m.emit(format!(
+                    "  {} = getelementptr inbounds [{} x i32], ptr {}, i32 0, i32 {}",
+                    elem_ptr, len, arr_ptr, idx
+                ));
+                let tmp = self.fresh_tmp();
+                m.emit(format!("  {} = load i32, ptr {}", tmp, elem_ptr));
+                Ok(tmp)
+            }
+            Expr::ArrayLit(_) => Err("配列リテラルは変数初期化でのみ使用できます".to_string()),
             Expr::UnaryNot(_) => Err("整数式コンテキストでの NOT (BOOL 式) はまだサポートしていません".to_string()),
         }
     }

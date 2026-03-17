@@ -1,0 +1,9 @@
+VAR BOOL#NOT1
+VAR BOOL#patturn6_1
+
+LDN  FALSE
+ORN  FALSE
+ST  NOT1
+EQ  TRUE
+ST  patturn6_1
+END

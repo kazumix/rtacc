@@ -1,0 +1,96 @@
+{
+  "toolsets": {
+    "llvm": {
+      "compiler": "clang",
+      "linker": "lld",
+      "compiler_flags": null,
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096"
+      ]
+    },
+    "vs2017": {
+      "compiler": "cl",
+      "linker": "link",
+      "compiler_flags": [
+        "/W3",
+        "/nologo"
+      ],
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096",
+        "/NOLOGO"
+      ]
+    }
+  },
+  "targets": [
+    {
+      "name": "sqint",
+      "toolset": "llvm",
+      "output_dir": "out",
+      "output": "PLC.rta",
+      "optimize": "2",
+      "compile_only": false,
+      "includes": [
+        "../PLCP",
+        "$(RTEDGE)\\Library"
+      ],
+      "sources": [
+        "SQINT.c",
+        "sqint_stubs.c",
+        "../PLCP/apif.c",
+        "../PLCP/argument.c",
+        "../PLCP/basicfunction.c",
+        "../PLCP/bitfield.c",
+        "../PLCP/bluescreen.c",
+        "../PLCP/comment.c",
+        "../PLCP/config.c",
+        "../PLCP/container.c",
+        "../PLCP/engine.c",
+        "../PLCP/errorlog.c",
+        "../PLCP/exception.c",
+        "../PLCP/functionblock.c",
+        "../PLCP/heap.c",
+        "../PLCP/indicate.c",
+        "../PLCP/inifile.c",
+        "../PLCP/instruction.c",
+        "../PLCP/internalclock.c",
+        "../PLCP/label.c",
+        "../PLCP/literal.c",
+        "../PLCP/logic.c",
+        "../PLCP/main.c",
+        "../PLCP/md5c.c",
+        "../PLCP/mnmfile.c",
+        "../PLCP/pause.c",
+        "../PLCP/plccontrol.c",
+        "../PLCP/poufile.c",
+        "../PLCP/project.c",
+        "../PLCP/property.c",
+        "../PLCP/reservedword.c",
+        "../PLCP/retain.c",
+        "../PLCP/rtedge.c",
+        "../PLCP/scope.c",
+        "../PLCP/sqtbl.c",
+        "../PLCP/step.c",
+        "../PLCP/string.c",
+        "../PLCP/structure.c",
+        "../PLCP/trigger.c",
+        "../PLCP/status.c",
+        "../PLCP/type.c",
+        "../PLCP/userFB.c",
+        "../PLCP/userfunc.c",
+        "../PLCP/util.c",
+        "../PLCP/variable.c",
+        "../PLCP/variant.c"
+      ],
+      "libs": null,
+      "defines": [
+        "_DEBUG"
+      ],
+      "flags": null
+    }
+  ]
+}
+

@@ -503,8 +503,9 @@ fn infer_var_types(prog: &IlProgram) -> HashMap<String, VarType> {
     var_types
 }
 
-/// ごく簡単な IL (BOOL 論理ネットワーク) を LLVM IR に変換
-fn compile_il_to_llvm_ir(prog: &IlProgram) -> Result<String, String> {
+/// ごく簡単な IL (BOOL 論理ネットワーク) を LLVM IR に変換。
+/// entry_name には POU 名（通常はファイル名のベース名）を渡す。
+fn compile_il_to_llvm_ir(prog: &IlProgram, entry_name: &str) -> Result<String, String> {
     let var_types = infer_var_types(prog);
 
     // 即値以外の名前を変数リストに（型は推論結果またはメンバから）
@@ -569,7 +570,12 @@ fn compile_il_to_llvm_ir(prog: &IlProgram) -> Result<String, String> {
     m.emit("; llil: IL -> LLVM IR (BOOL/INT/UINT/TIME, ADD/GT, CTU/TP)");
     emit_ctu_step(&mut m);
     emit_tp_step(&mut m);
-    m.emit("define i32 @main() {");
+
+    // POU 名（ファイル名ベース）を LLVM 用にサニタイズして関数名に使う。
+    let pou_name = sanitize_llvm_name(entry_name);
+
+    // 本体: POU 関数（例: define i32 @eqtest() { ... }）
+    m.emit(format!("define i32 @{}() {{", pou_name));
     m.emit("entry:");
 
     // 変数ごとに alloca（IR 用に # . を _ にした名前を使用）
@@ -898,7 +904,13 @@ fn main() {
         }
     };
 
-    let ir = match compile_il_to_llvm_ir(&prog) {
+    // POU 名として入力ファイルのベース名を使う（拡張子を除いた部分）。
+    let entry_name = Path::new(input_path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("il_pou");
+
+    let ir = match compile_il_to_llvm_ir(&prog, entry_name) {
         Ok(ir) => ir,
         Err(e) => {
             eprintln!("コンパイルエラー: {e}");

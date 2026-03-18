@@ -12,14 +12,16 @@ $"??_C@_0BB@IPBJDFLK@NotBool?$CI1?$CJ?5?$DN?5?$CFd?6?$AA@" = comdat any
 
 ; Function Attrs: nounwind
 define dso_local noundef i32 @main() local_unnamed_addr #0 {
-  %1 = tail call i32 @NotBool(i32 noundef 0) #3
-  %2 = tail call i32 @NotBool(i32 noundef 1) #3
-  %3 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0BB@JIGCCBPJ@NotBool?$CI0?$CJ?5?$DN?5?$CFd?6?$AA@", i32 noundef %1)
-  %4 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0BB@IPBJDFLK@NotBool?$CI1?$CJ?5?$DN?5?$CFd?6?$AA@", i32 noundef %2)
+  %1 = tail call zeroext i1 @NotBool(i1 noundef zeroext false) #3
+  %2 = tail call zeroext i1 @NotBool(i1 noundef zeroext true) #3
+  %3 = zext i1 %1 to i32
+  %4 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0BB@JIGCCBPJ@NotBool?$CI0?$CJ?5?$DN?5?$CFd?6?$AA@", i32 noundef %3)
+  %5 = zext i1 %2 to i32
+  %6 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0BB@IPBJDFLK@NotBool?$CI1?$CJ?5?$DN?5?$CFd?6?$AA@", i32 noundef %5)
   ret i32 0
 }
 
-declare dso_local i32 @NotBool(i32 noundef) local_unnamed_addr #1
+declare dso_local zeroext i1 @NotBool(i1 noundef zeroext) local_unnamed_addr #1
 
 ; Function Attrs: nofree nounwind
 declare dso_local noundef i32 @printf(ptr noundef readonly captures(none), ...) local_unnamed_addr #2
@@ -33,10 +35,10 @@ attributes #3 = { nounwind }
 !llvm.module.flags = !{!2, !3, !4, !5}
 !llvm.ident = !{!6}
 
-!0 = distinct !DICompileUnit(language: DW_LANG_C11, file: !1, producer: "clang version 22.1.0 (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)", isOptimized: true, runtimeVersion: 0, emissionKind: NoDebug, splitDebugInlining: false, nameTableKind: None)
+!0 = distinct !DICompileUnit(language: DW_LANG_C11, file: !1, producer: "clang version 22.1.1 (https://github.com/llvm/llvm-project fef02d48c08db859ef83f84232ed78bd9d1c323a)", isOptimized: true, runtimeVersion: 0, emissionKind: NoDebug, splitDebugInlining: false, nameTableKind: None)
 !1 = !DIFile(filename: "main.c", directory: "D:\\work\\rtacc\\examples\\ST")
 !2 = !{i32 1, !"NumRegisterParameters", i32 0}
 !3 = !{i32 2, !"Debug Info Version", i32 3}
 !4 = !{i32 1, !"wchar_size", i32 2}
 !5 = !{i32 1, !"MaxTLSAlign", i32 65536}
-!6 = !{!"clang version 22.1.0 (https://github.com/llvm/llvm-project 4434dabb69916856b824f68a64b029c67175e532)"}
+!6 = !{!"clang version 22.1.1 (https://github.com/llvm/llvm-project fef02d48c08db859ef83f84232ed78bd9d1c323a)"}

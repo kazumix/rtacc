@@ -30,13 +30,13 @@
       "name": "default",
       "toolset": "llvm",
       "output_dir": "",
-      "output": "EQtest.rta",
+      "output": "out/EQtest.rta",
       "optimize": "2",
       "compile_only": false,
       "includes": null,
       "sources": [
-        "EQtest.il",
-        "main.c"
+        "main.c",
+        "EQtest.il"
       ],
       "libs": null,
       "defines": null,

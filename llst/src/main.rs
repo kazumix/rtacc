@@ -797,6 +797,22 @@ impl LlvmModule {
     }
 }
 
+fn sanitize_llvm_name(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    for ch in name.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '_' {
+            out.push(ch);
+        } else {
+            out.push('_');
+        }
+    }
+    if out.is_empty() {
+        "st_pou".to_string()
+    } else {
+        out
+    }
+}
+
 struct BoolCodeGen<'a> {
     func: &'a FunctionAst,
     next_tmp: u32,
@@ -880,15 +896,17 @@ impl<'a> BoolCodeGen<'a> {
 
 struct CodeGen<'a> {
     ast: &'a ProgramAst,
+    entry_name: &'a str,
     next_tmp: u32,
     vars: Vec<(String, String)>,       // (name, ptr) for scalars
     arrays: Vec<(String, String, u32)>, // (name, ptr, len) for arrays
 }
 
 impl<'a> CodeGen<'a> {
-    fn new(ast: &'a ProgramAst) -> Self {
+    fn new(ast: &'a ProgramAst, entry_name: &'a str) -> Self {
         Self {
             ast,
+            entry_name,
             next_tmp: 1,
             vars: Vec::new(),
             arrays: Vec::new(),
@@ -919,9 +937,10 @@ impl<'a> CodeGen<'a> {
 
     fn gen(&mut self) -> Result<LlvmModule, String> {
         let mut m = LlvmModule::new();
+        let pou_name = sanitize_llvm_name(self.entry_name);
 
         m.emit("; llst: simple ST -> LLVM IR");
-        m.emit("define i32 @main() {");
+        m.emit(format!("define i32 @{}() {{", pou_name));
         m.emit("entry:");
 
         for stmt in &self.ast.stmts {
@@ -1087,13 +1106,13 @@ impl<'a> CodeGen<'a> {
     }
 }
 
-fn compile_st_to_llvm_ir(input: &str) -> Result<String, String> {
+fn compile_st_to_llvm_ir(input: &str, entry_name: &str) -> Result<String, String> {
     let tokens = lex(input)?;
     let mut parser = Parser::new(tokens);
     let root = parser.parse_root()?;
     match root {
         RootAst::Program(ast) => {
-            let mut gen = CodeGen::new(&ast);
+            let mut gen = CodeGen::new(&ast, entry_name);
             let module = gen.gen()?;
             Ok(module.to_string())
         }
@@ -1131,7 +1150,12 @@ fn main() {
         }
     };
 
-    let ir = match compile_st_to_llvm_ir(&input) {
+    let entry_name = Path::new(input_path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("st_pou");
+
+    let ir = match compile_st_to_llvm_ir(&input, entry_name) {
         Ok(ir) => ir,
         Err(e) => {
             eprintln!("コンパイルエラー: {e}");

@@ -1,5 +1,5 @@
 ; llst: simple ST -> LLVM IR
-define i32 @main() {
+define i32 @STloop() {
 entry:
   %t1 = alloca i32
   store i32 0, ptr %t1
@@ -35,5 +35,6 @@ forbody.11:
   store i32 %t21, ptr %t9
   br label %loop.10
 end.12:
-  ret i32 0
+  %t22 = load i32, ptr %t1
+  ret i32 %t22
 }

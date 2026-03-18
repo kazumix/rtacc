@@ -7,3 +7,5 @@ END_VAR
 FOR i := 0 TO 4 DO
     Data00 := Data00 + Ary00[i];
 END_FOR
+
+RETURN Data00;

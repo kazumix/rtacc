@@ -447,6 +447,7 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 	// -combine-ir（方式B）: 集めた .ll を1つの .obj に。2つ以上なら llvm-link で結合してから clang。llvm-link が配布に含まれないため将来オプション。
 	if opts.CombineIR && len(llPaths) > 0 {
 		combinedObj := filepath.Join(outDir, "combined.obj")
+		combinedAsm := filepath.Join(outDir, "combined.asm")
 		var irInput string
 		if len(llPaths) == 1 {
 			irInput = llPaths[0]
@@ -464,6 +465,13 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 				return err
 			}
 			irInput = combinedBC
+		}
+		// combined IR から統合 asm を標準出力物として生成する。
+		argsAsm := []string{"-x", "ir"}
+		argsAsm = append(argsAsm, baseCompile...)
+		argsAsm = append(argsAsm, "-S", irInput, "-o", combinedAsm)
+		if err := run(clang, argsAsm, "LL→asm (combined)"); err != nil {
+			return err
 		}
 		argsCombine := []string{"-x", "ir"}
 		argsCombine = append(argsCombine, baseCompile...)

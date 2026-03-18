@@ -38,7 +38,7 @@ entry:
   store i1 %in_val, ptr %running
   ret void
 }
-define i32 @main() {
+define i32 @test() {
 entry:
   %ptr_LimitOverCount = alloca i32
   store i32 0, ptr %ptr_LimitOverCount

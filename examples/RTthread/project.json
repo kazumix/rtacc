@@ -1,0 +1,45 @@
+{
+  "toolsets": {
+    "llvm": {
+      "compiler": "clang",
+      "linker": "lld",
+      "compiler_flags": null,
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096"
+      ]
+    },
+    "vs2017": {
+      "compiler": "cl",
+      "linker": "link",
+      "compiler_flags": [
+        "/W3",
+        "/nologo"
+      ],
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096",
+        "/NOLOGO"
+      ]
+    }
+  },
+  "targets": [
+    {
+      "name": "default",
+      "toolset": "llvm",
+      "output_dir": "",
+      "output": "out/RTthread.rta",
+      "optimize": "2",
+      "compile_only": false,
+      "includes": null,
+      "sources": [
+        "RTthread.c"
+      ],
+      "libs": null,
+      "defines": null,
+      "flags": null
+    }
+  ]
+}

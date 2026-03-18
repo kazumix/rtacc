@@ -30,12 +30,12 @@
       "name": "default",
       "toolset": "llvm",
       "output_dir": "",
-      "output": "app.rta",
+      "output": "out/hello.rta",
       "optimize": "2",
       "compile_only": false,
       "includes": null,
       "sources": [
-        "main.ll"
+        "main.c"
       ],
       "libs": null,
       "defines": null,

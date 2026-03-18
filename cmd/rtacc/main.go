@@ -55,6 +55,7 @@ func runJSON(jsonPath string, rest []string) error {
 	if err := fs.Parse(rest); err != nil {
 		return err
 	}
+	combineIRSpecified := argHasCombineIRSetting(rest)
 
 	proj, err := config.LoadFile(jsonPath)
 	if err != nil {
@@ -71,6 +72,11 @@ func runJSON(jsonPath string, rest []string) error {
 		EmitLLOnly:   *emitLLOnly,
 		CombineIR:    *combineIR,
 		Optimize:     strings.TrimSpace(*optimize),
+	}
+	// llvm-link.exe が利用可能で、かつ -combine-ir 指定がなければ既定で有効化する。
+	// 明示指定（true/false）がある場合はユーザー指定を優先する。
+	if !combineIRSpecified && llvmLinkAvailable(paths) {
+		opts.CombineIR = true
 	}
 	if *includes != "" {
 		opts.Includes = splitSemicolon(*includes)
@@ -180,6 +186,7 @@ func runCLI(args []string) error {
 	// -o / --output-dir をソースの後ろにあっても認識するよう先に抽出
 	outputFromArgs, args1 := extractOutput(args)
 	outputDirFromArgs, argsForParse := extractOutputDir(args1)
+	combineIRSpecified := argHasCombineIRSetting(argsForParse)
 
 	fs := flag.NewFlagSet("rtacc-cli", flag.ExitOnError)
 	output := fs.String("o", "", "出力ファイル (.rta / .rsl)")
@@ -339,7 +346,34 @@ func runCLI(args []string) error {
 	}
 
 	paths := build.DefaultPaths()
+	// llvm-link.exe が利用可能で、かつ -combine-ir 指定がなければ既定で有効化する。
+	// 明示指定（true/false）がある場合はユーザー指定を優先する。
+	if !combineIRSpecified && llvmLinkAvailable(paths) {
+		opts.CombineIR = true
+	}
 	return build.BuildTarget(proj, &proj.Targets[0], projectDir, paths, opts)
+}
+
+// argHasCombineIRSetting は args 内に -combine-ir の明示指定があるかを返す。
+// bool フラグは -combine-ir / --combine-ir / -combine-ir=true / -combine-ir=false の形を想定。
+func argHasCombineIRSetting(args []string) bool {
+	for _, a := range args {
+		if a == "-combine-ir" || a == "--combine-ir" ||
+			strings.HasPrefix(a, "-combine-ir=") || strings.HasPrefix(a, "--combine-ir=") {
+			return true
+		}
+	}
+	return false
+}
+
+func llvmLinkAvailable(paths build.Paths) bool {
+	if strings.TrimSpace(paths.LlvmLink) == "" {
+		return false
+	}
+	if fi, err := os.Stat(paths.LlvmLink); err == nil && fi != nil && !fi.IsDir() {
+		return true
+	}
+	return false
 }
 
 func splitSemicolon(s string) []string {

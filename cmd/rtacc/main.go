@@ -118,7 +118,12 @@ func runJSON(jsonPath string, rest []string) error {
 	}
 
 	for _, t := range targets {
-		if err := build.BuildTarget(proj, t, projectDir, paths, opts); err != nil {
+		runOpts := opts
+		// JSON の combine_ir（CLI で -combine-ir を明示していないときのみ）
+		if !combineIRSpecified && t.CombineIR != nil {
+			runOpts.CombineIR = *t.CombineIR
+		}
+		if err := build.BuildTarget(proj, t, projectDir, paths, runOpts); err != nil {
 			return err
 		}
 	}

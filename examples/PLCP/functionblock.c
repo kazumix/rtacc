@@ -12,6 +12,10 @@ DWORD	status_funcblock = STATUS_STOP;
 
 static RTHANDLE					hBlockFuncRSL;
 
+#if !DYNAMIC_LOAD_FB
+extern struct FUNCTIONBLOCKDEFINE	*FunctionBlocks[];
+extern WORD							NumFunctionBlocks;
+#endif
 
 /// <summary>
 /// RSLとユーザファンクションブロックも含む、ファンクションブロックのリスト
@@ -180,22 +184,10 @@ P_FUNCTIONBLOCK Functionblock_GetEntry(char *instancename)
 /// <param name="RslName"></param>
 void Functionblock_Load(char* RslName)
 {
-	/// /// <summary>
-	/// ファンクションブロックRSLから取り出したリスト
-	/// </summary>
 #if DYNAMIC_LOAD_FB
 
-	struct FUNCTIONBLOCKDEFINE**	FunctionBlocks = NULL;
-	WORD							NumFunctionBlocks = 0;
-
-#else
-
-	__declspec(dllimport) struct FUNCTIONBLOCKDEFINE	*FunctionBlocks[];
-	__declspec(dllimport) WORD							NumFunctionBlocks;
-
-#endif
-
-#if DYNAMIC_LOAD_FB
+	struct FUNCTIONBLOCKDEFINE**	localFunctionBlocks = NULL;
+	WORD							localNumFunctionBlocks = 0;
 
 	WORD				*pWord;
 	struct FBENTRY		*FBentry;
@@ -206,12 +198,12 @@ void Functionblock_Load(char* RslName)
 	if (hBlockFuncRSL != NULL_RTHANDLE)
 	{
 		// エントリリストの取得
-		FunctionBlocks = (struct FUNCTIONBLOCKDEFINE**)GetRtProcAddress(hBlockFuncRSL, "FunctionBlocks");
+		localFunctionBlocks = (struct FUNCTIONBLOCKDEFINE**)GetRtProcAddress(hBlockFuncRSL, "FunctionBlocks");
 		// エントリ数の取得
 		pWord = (WORD*)GetRtProcAddress(hBlockFuncRSL, "NumFunctionBlocks");
 
 		// 判定
-		if ((FunctionBlocks == NULL) || (pWord == 0))
+		if ((localFunctionBlocks == NULL) || (pWord == 0))
 		{
 			// エラーログの記録
 			Errorlog_Add(0, FUNC_LOAD_WARNING, RslName);
@@ -219,7 +211,7 @@ void Functionblock_Load(char* RslName)
 		else
 		{
 			// エントリ数を格納する
-			NumFunctionBlocks = *pWord;
+			localNumFunctionBlocks = *pWord;
 			// 本機能の動作状態を更新
 			status_funcblock = STATUS_RUN;
 		}
@@ -227,16 +219,16 @@ void Functionblock_Load(char* RslName)
 		// RSL二定義されているすべてのファンクションブロックを処理します
 		int						lp1;
 		struct STRUCTDEFINE*	connector;
-		for (lp1 = 0; lp1 < NumFunctionBlocks; lp1++)
+		for (lp1 = 0; lp1 < localNumFunctionBlocks; lp1++)
 		{
 			// ファンクションブロックを記憶します
-			FBentry = Functionblock_Add(FunctionBlocks[lp1]->name);
+			FBentry = Functionblock_Add(localFunctionBlocks[lp1]->name);
 
 			// エントリーポイントをセットします
-			FBentry->entry = FunctionBlocks[lp1]->entry;
+			FBentry->entry = localFunctionBlocks[lp1]->entry;
 
 			// 全てのファンクションブロックのすべてのコネクタを処理
-			connector = &FunctionBlocks[lp1]->connectors[0];
+			connector = &localFunctionBlocks[lp1]->connectors[0];
 			while (connector->name)
 			{
 				// コネクタを記録
@@ -246,6 +238,28 @@ void Functionblock_Load(char* RslName)
 				connector++;
 			}
 		}
+	}
+
+#else
+
+	(void)RslName;
+	{
+		int						lp1;
+		struct STRUCTDEFINE*	connector;
+		struct FBENTRY*			FBentry;
+
+		for (lp1 = 0; lp1 < NumFunctionBlocks; lp1++)
+		{
+			FBentry = Functionblock_Add(FunctionBlocks[lp1]->name);
+			FBentry->entry = FunctionBlocks[lp1]->entry;
+			connector = &FunctionBlocks[lp1]->connectors[0];
+			while (connector->name)
+			{
+				Functionblock_AddConnector(FBentry, connector);
+				connector++;
+			}
+		}
+		status_funcblock = STATUS_RUN;
 	}
 
 #endif
@@ -265,10 +279,10 @@ void Functionblock_Unload(void)
 		hBlockFuncRSL = NULL_RTHANDLE;
 	}
 
-	// 本機能の動作状態を更新
+#endif
+
 	status_funcblock = STATUS_STOP;
 
-#endif
 }
 
 /// <summary>

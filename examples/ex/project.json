@@ -1,0 +1,66 @@
+{
+  "toolsets": {
+    "llvm": {
+      "compiler": "clang",
+      "linker": "lld",
+      "compiler_flags": [
+        "-Wno-visibility",
+        "-Wno-microsoft-anon-tag"
+      ],
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096",
+        "/LIBPATH:$(RTEDGE)\\Library",
+        "/LIBPATH:$(RTEDGE)\\Library\\Rt"
+      ]
+    },
+    "vs2017": {
+      "compiler": "cl",
+      "linker": "link",
+      "compiler_flags": [
+        "/W3",
+        "/nologo"
+      ],
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096",
+        "/NOLOGO",
+        "/LIBPATH:$(RTEDGE)\\Library",
+        "/LIBPATH:$(RTEDGE)\\Library\\Rt"
+      ]
+    }
+  },
+  "targets": [
+    {
+      "name": "default",
+      "toolset": "llvm",
+      "output_dir": "out",
+      "output": "hello.rta",
+      "optimize": "2",
+      "compile_only": false,
+      "includes": [
+        ".",
+        "$(RTEDGE)\\Library"
+      ],
+      "sources": [
+        "hello.c",
+        "scan_thread.c",
+        "scan.il",
+        "rtedge_tags.c",
+        "il_rtedge_egapi.c",
+        "il_rtedge_slots_bind.c"
+      ],
+      "il_memory": "rtedge",
+      "libs": [
+        "eghgapi.lib"
+      ],
+      "defines": [
+        "IL_USE_PLCP_RTEDGE",
+        "IL_USE_EGAPI"
+      ],
+      "flags": null
+    }
+  ]
+}

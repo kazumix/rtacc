@@ -1,0 +1,12 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Get-Item \"d:\\\\work\\\\rtacc\\\\bin\\\\rtacc\\.exe\" -ErrorAction SilentlyContinue \\| Select-Object FullName$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"d:\\\\work\\\\rtacc\\\\examples\\\\AND\" ; d:\\\\work\\\\rtacc\\\\bin\\\\rtacc\\.exe project\\.json$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

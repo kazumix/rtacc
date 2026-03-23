@@ -7,12 +7,14 @@
 \*****************************************************************************/
 #include "common.h"
 
-#if	(DYNAMIC_LOAD_IEC != 1)
-#pragma comment(lib,"Debug\\PLCPIEC.lib")		// 効いてないので、しかたなくリンクライブラリを設定してます..
+#if DYNAMIC_LOAD_IEC
+#elif defined(_MSC_VER)
+#pragma comment(lib,"Debug\\PLCPIEC.lib")		// スタティック一体リンク時は不要（LLVM/rtacc では sources で取り込む）
 #endif
 
-#if	(DYNAMIC_LOAD_FB != 1)
-#pragma comment(lib,"Debug\\PLCPFB.lib")		// 効いてないので、しかたなくリンクライブラリを設定してます..
+#if DYNAMIC_LOAD_FB
+#elif defined(_MSC_VER)
+#pragma comment(lib,"Debug\\PLCPFB.lib")
 #endif
 
 extern int main2(int argc, char *argv[]);

@@ -5,16 +5,7 @@ target triple = "i386-pc-windows-msvc19.44.35223"
 
 $LibVersion_0x0701 = comdat any
 
-$"??_C@_0M@OKMJOFGL@PLCPIEC?4rsl?$AA@" = comdat any
-
-$"??_C@_0L@NJCAICAP@PLCPEN?4rsl?$AA@" = comdat any
-
-$"??_C@_0L@JPAKFIOJ@PLCPFB?4rsl?$AA@" = comdat any
-
 @LibVersion_0x0701 = weak_odr dso_local local_unnamed_addr global i32 1, comdat, align 4
-@"??_C@_0M@OKMJOFGL@PLCPIEC?4rsl?$AA@" = linkonce_odr dso_local unnamed_addr constant [12 x i8] c"PLCPIEC.rsl\00", comdat, align 1
-@"??_C@_0L@NJCAICAP@PLCPEN?4rsl?$AA@" = linkonce_odr dso_local unnamed_addr constant [11 x i8] c"PLCPEN.rsl\00", comdat, align 1
-@"??_C@_0L@JPAKFIOJ@PLCPFB?4rsl?$AA@" = linkonce_odr dso_local unnamed_addr constant [11 x i8] c"PLCPFB.rsl\00", comdat, align 1
 
 ; Function Attrs: nounwind
 define dso_local noundef i32 @plcmain(i32 noundef %0, ptr noundef %1) local_unnamed_addr #0 {
@@ -37,9 +28,8 @@ define dso_local noundef i32 @plcmain(i32 noundef %0, ptr noundef %1) local_unna
   tail call void @INtime_ProcessCatalog() #2
   tail call void @ExitEvent_Init() #2
   tail call void @SQTBL_Initialize() #2
-  tail call void @Basicfunction_Load(ptr noundef nonnull @"??_C@_0M@OKMJOFGL@PLCPIEC?4rsl?$AA@") #2
-  tail call void @Functionblock_Load(ptr noundef nonnull @"??_C@_0L@NJCAICAP@PLCPEN?4rsl?$AA@") #2
-  tail call void @Functionblock_Load(ptr noundef nonnull @"??_C@_0L@JPAKFIOJ@PLCPFB?4rsl?$AA@") #2
+  tail call void @Basicfunction_Load(ptr noundef null) #2
+  tail call void @Functionblock_Load(ptr noundef null) #2
   %6 = tail call i32 @Reservedword_CreateCatalog() #2
   tail call void @Engine_Init() #2
   tail call void @Logic_Clear() #2

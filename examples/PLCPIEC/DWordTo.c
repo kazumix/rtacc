@@ -1,0 +1,276 @@
+#include "common.h"
+#include "PLCPIEC.h"
+
+const T_DWORD FLOAT_EXACT_LIMIT = 16777216L; //DWORD_TO_REAL範囲チェック用定数
+
+T_BOOL STAT_ENO_DWORD_TO;	// DWORD_TO用ENO状態保持変数(シングルスレッド用)
+
+/// <summary>
+/// DWORD_TO処理結果のENOを設定します。
+/// ※ マルチインスタンスに未対応
+///    ローカルスレッドストレージ書込みへ変更する必要あり
+/// </summary>
+/// <param name="eno">ENOの値</param>
+/// <returns> (なし) </returns>
+PLCPIEC_API void SetDWordToEno(T_BOOL eno)
+{
+	STAT_ENO_DWORD_TO = eno;
+}
+
+/// <summary>
+/// DWORD_TO処理結果のENOを返却します。
+/// ※ マルチインスタンスに未対応
+///    ローカルスレッドストレージ参照へ変更する必要あり
+/// </summary>
+/// <returns></returns>
+PLCPIEC_API T_BOOL GetDWordToEno()
+{
+	return STAT_ENO_DWORD_TO;
+}
+
+// ------------------------------------ 
+//　型変換 DWORD型から～型へ
+//-------------------------------------
+
+/// <summary>
+/// （型変換）DWORD型の値をBOOL型に変換します。
+/// 例　(DWORD)0x00000000 → (BOOL)0x0000  FALSE
+///		(DWORD)0xFFFFFFFF → (BOOL)0x0001  TRUE
+///     (DWORD)0x00000001 → (BOOL)0x0001  TRUE
+/// </summary>
+/// <param name="a1">戻り値(BOOL型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_BOOL(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_BOOL;
+
+	*a1->pBool = (T_BOOL)(*a1->pDword != 0) ? TRUE : FALSE;	// 1以上ならばTRUE
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORDの値をBYTE型に変換します。
+/// 例　(DWORD)0x00000000        0  → (D_BYTE)0x00	  0
+///     (DWORD)0x00000001        1  → (D_BYTE)0x01	  1
+///     (DWORD)0x000000FF      255  → (D_BYTE)0xFF	255
+///     (DWORD)0x00000100      256  → (D_BYTE)0x00	  0
+///     (DWORD)0xFFFFFFFF       -1  → (D_BYTE)0xFF	255
+/// </summary>
+/// <param name="a1">戻り値(BYTE型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_BYTE(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_BYTE;
+
+	*a1->pByte = (T_BYTE)*a1->pDword;	// BYTE型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をDINT型に変換します。
+/// 例　(DWORD)0x00000000 → (DINT)0x00000000           0
+///   　(DWORD)0x7FFFFFFF → (DINT)0x7FFFFFFF  2147483647
+///     (DWORD)0x80000000 → (DINT)0x80000000 -2147483648
+///     (DWORD)0xFFFFFFFF → (DINT)0xFFFFFFFF          -1
+/// </summary>
+/// <param name="a1">戻り値(DINT型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_DINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_DINT;
+
+	*a1->pDint = (T_DINT)*a1->pDword;	// DINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をINT型に変換します。
+/// 例　(DWORD)0x00000000 → (INT)0x0000     0
+///   　(DWORD)0x00007FFF → (INT)0x7FFF  32767
+///     (DWORD)0x00008000 → (INT)0x8000 -32768
+///     (DWORD)0x0000FFFF → (INT)0xFFFF     -1
+///     (DWORD)0x00010000 → (INT)0x0000      0
+///     (DWORD)0xFFFFFFFF → (INT)0xFFFF     -1
+/// </summary>
+/// <param name="a1">戻り値(INT型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_INT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_INT;
+
+	*a1->pInt = (T_INT)*a1->pDword;	// INT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をLINT型に変換します。
+/// 例　(DWORD)0x00000000    → (LINT)0x0000000000000000            0
+///     (DWORD)0x00000001    → (LINT)0x0000000000000001            1
+///     (DWORD)0x7FFFFFFF    → (LINT)0x000000007FFFFFFF   2147483647
+///     (DWORD)0xFFFFFFFF    → (LINT)0xFFFFFFFFFFFFFFFF           -1
+///     (DWORD)0x80000000    → (LINT)0xFFFFFFFF80000000  -2147483648
+/// </summary>
+/// <param name="a1">戻り値(LINT型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_LINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	T_DINT wk = 0;
+
+	a1->Type = D_LINT;
+	wk = (T_DINT)*a1->pDword;	// DWORD型を符号あり整数にキャスト
+	*a1->pLint = (T_LINT)wk;	// LINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をLREAL型に変換します。
+/// 例　(DWORD)0x00000000  → (LREAL)0.0000000E+000
+///     (DWORD)0x00000001  → (LREAL)1.0000000E+000
+///     (DWORD)0x7FFFFFFF  → (LREAL)2.147483647E+009
+///     (DWORD)0xFFFFFFFF  → (LREAL)-1.0000000E+000
+///     (DWORD)0x80000000  → (LREAL)-2.147483648E+009
+/// </summary>
+/// <param name="a1">戻り値(LREAL型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_LREAL(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	T_DINT wk = 0;
+
+	a1->Type = D_LREAL;
+	wk = (T_DINT)*a1->pDword;	// DWORD型を符号あり整数にキャスト
+	*a1->pLreal = (T_LREAL)wk;	// LREAL型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をREAL型に変換します。
+/// 例　(DWORD)0x00000000  → (REAL)0.0000000E+000
+///     (DWORD)0x00000001  → (REAL)1.0000000E+000
+///     (DWORD)0x7FFFFFFF  → (REAL)2.147483647E+009
+///     (DWORD)0xFFFFFFFF  → (REAL)-1.0000000E+000
+///     (DWORD)0x80000000  → (REAL)-2.147483648E+009
+/// </summary>
+/// <param name="a1">戻り値(REAL型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_REAL(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	SetDWordToEno(TRUE);	// ENOフラグのリセット
+
+	//パラメータが2の24乗を超えるか(超えた場合丸め誤差が発生する)
+	if (*a1->pDword > FLOAT_EXACT_LIMIT)
+	{
+		Eexception_Post(FUK_LIMIT_OVER_ERR, "DWORD_TO_REAL"); //丸め誤差発生
+		SetDWordToEno(FALSE);	// パラメータエラーのためENOをFALSEにする
+	}
+
+	T_DINT wk = 0;
+
+	a1->Type = D_REAL;
+	wk = (T_DINT)*a1->pDword;	// DWORD型を符号あり整数にキャスト
+	*a1->pReal = (T_REAL)wk;	// REAL型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をSINT型に変換します。
+/// 例　(DWORD)0x00000000 → (SINT)0x00      0
+///   　(DWORD)0x0000007F → (SINT)0x7F    127
+///     (DWORD)0x00000080 → (SINT)0x80   -128
+///     (DWORD)0x000000FF → (SINT)0xFF     -1
+///     (DWORD)0x00000100 → (SINT)0x00      0
+///     (DWORD)0xFFFFFFFF → (SINT)0xFF     -1
+/// </summary>
+/// <param name="a1">戻り値(SINT型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_SINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_SINT;
+
+	*a1->pSint = (T_SINT)*a1->pDword;	// SINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をUDINT型に変換します。
+/// 例　(DWORD)0x00000000 → (UDINT)0x00000000           0
+///   　(DWORD)0x7FFFFFFF → (UDINT)0x7FFFFFFF  2147483647
+///     (DWORD)0x80000000 → (UDINT)0x80000000  2147483648
+///     (DWORD)0xFFFFFFFF → (UDINT)0xFFFFFFFF  4294967925
+/// </summary>
+/// <param name="a1">戻り値(UDINT型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_UDINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_UDINT;
+
+	*a1->pUdint = (T_UDINT)*a1->pDword;	// UDINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をUINT型に変換します。
+/// 例　(DWORD)0x00000000 → (UINT)0x0000     0
+///   　(DWORD)0x00007FFF → (UINT)0x7FFF  32767
+///     (DWORD)0x00008000 → (UINT)0x8000  32768
+///     (DWORD)0x0000FFFF → (UINT)0xFFFF  65535
+///     (DWORD)0x00010000 → (UINT)0x0000      0
+///     (DWORD)0xFFFFFFFF → (UINT)0xFFFF  65535
+/// </summary>
+/// <param name="a1">戻り値(UINT型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_UINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_UINT;
+
+	*a1->pUint = (T_UINT)*a1->pDword;	// UINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORDの値をUSINT型に変換します。
+/// 例　(DWORD)0x00000000        0  → (D_USINT)0x00	  0
+///     (DWORD)0x00000001        1  → (D_USINT)0x01	  1
+///     (DWORD)0x000000FF      255  → (D_USINT)0xFF	255
+///     (DWORD)0x00000100      256  → (D_USINT)0x00	  0
+///     (DWORD)0xFFFFFFFF       -1  → (D_USINT)0xFF	255
+/// </summary>
+/// <param name="a1">戻り値(BOOL型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_USINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_USINT;
+
+	*a1->pUsint = (T_USINT)*a1->pDword;	// USINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）DWORD型の値をWORD型に変換します。
+/// 例　(DWORD)0x00000000 → (WORD)0x0000
+///   　(DWORD)0x00007FFF → (WORD)0x7FFF
+///     (DWORD)0x00008000 → (WORD)0x8000
+///     (DWORD)0x0000FFFF → (WORD)0xFFFF
+///     (DWORD)0x00010000 → (WORD)0x0000
+///     (DWORD)0xFFFFFFFF → (WORD)0xFFFF
+/// </summary>
+/// <param name="a1">戻り値(WORD型)</param>
+/// <param name="a2">変換対象(DWORD型)</param>
+PLCPIEC_API P_ANY DWORD_TO_WORD(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_WORD;
+
+	*a1->pWord = (T_WORD)*a1->pDword;	// WORD型にキャスト
+
+	return a1;
+}

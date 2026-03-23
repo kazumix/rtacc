@@ -1,0 +1,231 @@
+#include "common.h"
+#include "PLCPIEC.h"
+
+// ------------------------------------ 
+//　型変換 UDINT型から～型へ
+//-------------------------------------
+
+/// <summary>
+/// （型変換）UDINT型の値をBOOL型に変換します。
+/// 例　(UDINT)0x00000000          0 → (BOOL)0x0000  FALSE
+///     (UDINT)0x00000001          1 → (BOOL)0x0001  TRUE
+///		(UDINT)0xFFFFFFFF 4294967925 → (BOOL)0x0001  TRUE
+/// </summary>
+/// <param name="a1">戻り値(BOOL型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_BOOL(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_BOOL;
+
+	*a1->pBool = (T_BOOL)(*a1->pUdint != 0) ? TRUE : FALSE;	// 1以上ならばTRUE
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINTの値をBYTE型に変換します。
+/// 例　(UDINT)0x00000000          0  → (D_BYTE)0x00	  0
+///     (UDINT)0x00000001          1  → (D_BYTE)0x01	  1
+///     (UDINT)0x000000FF        255  → (D_BYTE)0xFF	255
+///     (UDINT)0x00000100        256  → (D_BYTE)0x00	  0
+///     (UDINT)0xFFFFFFFF 4294967925  → (D_BYTE)0xFF	255
+/// </summary>
+/// <param name="a1">戻り値(BYTE型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_BYTE(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_BYTE;
+
+	*a1->pByte = (T_BYTE)*a1->pUdint;	// BYTE型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をDINT型に変換します。
+/// 例　(UDINT)0x00000000          0 → (DINT)0x00000000           0
+///   　(UDINT)0x7FFFFFFF 2147483647 → (DINT)0x7FFFFFFF  2147483647
+///     (UDINT)0x80000000 2147483648 → (DINT)0x80000000 -2147483648
+///     (UDINT)0xFFFFFFFF 4294967925 → (DINT)0xFFFFFFFF          -1
+/// </summary>
+/// <param name="a1">戻り値(DINT型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_DINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_DINT;
+
+	*a1->pDint = (T_DINT)*a1->pUdint;	// DINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をDWORD型に変換します。
+/// 例　(UDINT)0x00000000            0  → (DWORD)0x00000000
+///     (UDINT)0x00000001            1  → (DWORD)0x00000001
+///     (UDINT)0x7FFFFFFF   2147483647  → (DWORD)0x7FFFFFFF
+///     (UDINT)0x80000000   2147483648  → (DWORD)0x80000000
+///     (UDINT)0xFFFFFFFF   4294967295  → (DWORD)0xFFFFFFFF
+/// </summary>
+/// <param name="a1">戻り値(DWORD型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_DWORD(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_DWORD;
+	*a1->pDword = (T_DWORD)*a1->pUdint;
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をINT型に変換します。
+/// 例　(UDINT)0x00000000          0 → (INT)0x0000     0
+///   　(UDINT)0x00007FFF      32767 → (INT)0x7FFF  32767
+///     (UDINT)0x00008000      32768 → (INT)0x8000 -32768
+///     (UDINT)0x0000FFFF      65535 → (INT)0xFFFF     -1
+///     (UDINT)0x00010000      65536 → (INT)0x0000      0
+///     (UDINT)0xFFFFFFFF 4294967925 → (INT)0xFFFF     -1
+/// </summary>
+/// <param name="a1">戻り値(INT型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_INT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_INT;
+
+	*a1->pInt = (T_INT)*a1->pUdint;	// INT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をLINT型に変換します。
+/// 例　(UDINT)0x00000000           0 → (LINT)0x0000000000000000            0
+///     (UDINT)0x00000001           1 → (LINT)0x0000000000000001            1
+///     (UDINT)0x7FFFFFFF  2147483647 → (LINT)0x000000007FFFFFFF   2147483647
+///     (UDINT)0x80000000  2147483648 → (LINT)0xFFFFFFFF80000000  -2147483648
+///     (UDINT)0xFFFFFFFF  4294967925 → (LINT)0xFFFFFFFFFFFFFFFF           -1
+/// </summary>
+/// <param name="a1">戻り値(LINT型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_LINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_LINT;
+	*a1->pLint = (T_LINT)*a1->pUdint;	// LINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をLREAL型に変換します。
+/// 例　(UDINT)0x00000000           0  → (LREAL)0.0000000E+000
+///     (UDINT)0x00000001           1  → (LREAL)1.0000000E+000
+///     (UDINT)0x7FFFFFFF  2147483647  → (LREAL)2.147483647E+009
+///     (UDINT)0x80000000  2147483648  → (LREAL)-1.0000000E+000
+///     (UDINT)0xFFFFFFFF  4294967925  → (LREAL)-2.147483648E+009
+/// </summary>
+/// <param name="a1">戻り値(LREAL型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_LREAL(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_LREAL;
+	*a1->pLreal = (T_LREAL)*a1->pUdint;	// LREAL型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をREAL型に変換します。
+/// 例　(UDINT)0x00000000           0  → (REAL)0.0000000E+000
+///     (UDINT)0x00000001           1  → (REAL)1.0000000E+000
+///     (UDINT)0x7FFFFFFF  2147483647  → (REAL)2.147483647E+009
+///     (UDINT)0x80000000  2147483648  → (REAL)-1.0000000E+000
+///     (UDINT)0xFFFFFFFF  4294967925  → (REAL)-2.147483648E+009
+/// </summary>
+/// <param name="a1">戻り値(REAL型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_REAL(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_REAL;
+	*a1->pReal = (T_REAL)*a1->pUdint;	// REAL型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をSINT型に変換します。
+/// 例　(UDINT)0x00000000          0 → (SINT)0x00      0
+///   　(UDINT)0x0000007F        127 → (SINT)0x7F    127
+///     (UDINT)0x00000080       -128 → (SINT)0x80   -128
+///     (UDINT)0x000000FF        255 → (SINT)0xFF     -1
+///     (UDINT)0x00000100        256 → (SINT)0x00      0
+///     (UDINT)0xFFFFFFFF 4294967925 → (SINT)0xFF     -1
+/// </summary>
+/// <param name="a1">戻り値(SINT型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_SINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_SINT;
+
+	*a1->pSint = (T_SINT)*a1->pUdint;	// SINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をUINT型に変換します。
+/// 例　(UDINT)0x00000000          0 → (UINT)0x0000     0
+///   　(UDINT)0x00007FFF      32767 → (UINT)0x7FFF  32767
+///     (UDINT)0x00008000      32768 → (UINT)0x8000  32768
+///     (UDINT)0x0000FFFF      65535 → (UINT)0xFFFF  65535
+///     (UDINT)0x00010000      65536 → (UINT)0x0000      0
+///     (UDINT)0xFFFFFFFF 4294967925 → (UINT)0xFFFF  65535
+/// </summary>
+/// <param name="a1">戻り値(UINT型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_UINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_UINT;
+
+	*a1->pUint = (T_UINT)*a1->pUdint;	// UINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINTの値をUSINT型に変換します。
+/// 例　(UDINT)0x00000000          0  → (D_USINT)0x00	  0
+///     (UDINT)0x00000001          1  → (D_USINT)0x01	  1
+///     (UDINT)0x000000FF        255  → (D_USINT)0xFF	255
+///     (UDINT)0x00000100        256  → (D_USINT)0x00	  0
+///     (UDINT)0xFFFFFFFF 4294967925  → (D_USINT)0xFF	255
+/// </summary>
+/// <param name="a1">戻り値(USINT型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_USINT(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_USINT;
+
+	*a1->pUsint = (T_USINT)*a1->pUdint;	// USINT型にキャスト
+
+	return a1;
+}
+
+/// <summary>
+/// （型変換）UDINT型の値をWORD型に変換します。
+/// 例　(UDINT)0x00000000          0 → (WORD)0x0000
+///   　(UDINT)0x00007FFF      32767 → (WORD)0x7FFF
+///     (UDINT)0x00008000      32768 → (WORD)0x8000
+///     (UDINT)0x0000FFFF      65535 → (WORD)0xFFFF
+///     (UDINT)0x00010000      65536 → (WORD)0x0000
+///     (UDINT)0xFFFFFFFF 4294967925 → (WORD)0xFFFF
+/// </summary>
+/// <param name="a1">戻り値(WORD型)</param>
+/// <param name="a2">変換対象(UDINT型)</param>
+PLCPIEC_API P_ANY UDINT_TO_WORD(P_ANY a1, P_ANY a2, P_ANY a3, P_ANY a4)
+{
+	a1->Type = D_WORD;
+
+	*a1->pWord = (T_WORD)*a1->pUdint;	// WORD型にキャスト
+
+	return a1;
+}

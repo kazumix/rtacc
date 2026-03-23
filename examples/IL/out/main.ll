@@ -9,6 +9,7 @@ $LibVersion_0x0701 = comdat any
 
 ; Function Attrs: noreturn nounwind
 define dso_local noundef i32 @main() local_unnamed_addr #0 {
+  tail call void @IlRtedgeTags_Init() #2
   br label %1
 
 1:                                                ; preds = %1, %0
@@ -16,6 +17,8 @@ define dso_local noundef i32 @main() local_unnamed_addr #0 {
   %3 = tail call zeroext i8 @RtSleepEx(i32 noundef 1) #2
   br label %1
 }
+
+declare dso_local void @IlRtedgeTags_Init() local_unnamed_addr #1
 
 declare dso_local i32 @test() local_unnamed_addr #1
 

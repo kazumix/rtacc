@@ -1,4 +1,128 @@
-; llil: IL -> LLVM IR (BOOL/INT/UINT/TIME, ADD/GT, CTU/TP)
+; llil: IL -> LLVM IR (BOOL/INT/UINT/TIME, ADD/GT/GE, CTU/TP) memory=rtedge
+target datalayout = "e-m:x-p:32:32-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32-a:0:32-S32"
+target triple = "i386-pc-windows-msvc"
+@il_mem_StartSW = global i1 false, align 1
+@il_slot_StartSW = global ptr null, align 4
+@il_mem_EndSW = global i1 false, align 1
+@il_slot_EndSW = global ptr null, align 4
+@il_mem_AI_1 = global i32 0, align 4
+@il_slot_AI_1 = global ptr null, align 4
+@il_mem_Active = global i1 false, align 1
+@il_slot_Active = global ptr null, align 4
+@il_mem_LimitOver = global i1 false, align 1
+@il_slot_LimitOver = global ptr null, align 4
+@il_mem_LimitOverCount = global i32 0, align 4
+@il_slot_LimitOverCount = global ptr null, align 4
+@il_mem_Err = global i1 false, align 1
+@il_slot_Err = global ptr null, align 4
+@il_mem_TP1_Q = global i1 false, align 1
+@il_slot_TP1_Q = global ptr null, align 4
+@il_mem_TP2_Q = global i1 false, align 1
+@il_slot_TP2_Q = global ptr null, align 4
+@il_mem_TP3_Q = global i1 false, align 1
+@il_slot_TP3_Q = global ptr null, align 4
+@il_mem_TP4_Q = global i1 false, align 1
+@il_slot_TP4_Q = global ptr null, align 4
+@il_mem_LED1 = global i1 false, align 1
+@il_slot_LED1 = global ptr null, align 4
+@il_mem_LED2 = global i1 false, align 1
+@il_slot_LED2 = global ptr null, align 4
+@il_mem_CTU_1_CU = global i1 false, align 1
+@il_slot_CTU_1_CU = global ptr null, align 4
+@il_mem_CTU_1_RESET = global i1 false, align 1
+@il_slot_CTU_1_RESET = global ptr null, align 4
+@il_mem_CTU_1_PV = global i32 0, align 4
+@il_slot_CTU_1_PV = global ptr null, align 4
+@il_mem_CTU_1__prev_cu = global i1 false, align 1
+@il_slot_CTU_1__prev_cu = global ptr null, align 4
+@il_mem_CTU_1_Q = global i1 false, align 1
+@il_slot_CTU_1_Q = global ptr null, align 4
+@il_mem_CTU_1_CV = global i32 0, align 4
+@il_slot_CTU_1_CV = global ptr null, align 4
+@il_mem_TP_1_IN = global i1 false, align 1
+@il_slot_TP_1_IN = global ptr null, align 4
+@il_mem_TP_1_PT = global i32 0, align 4
+@il_slot_TP_1_PT = global ptr null, align 4
+@il_mem_TP_1__elapsed = global i32 0, align 4
+@il_slot_TP_1__elapsed = global ptr null, align 4
+@il_mem_TP_1__running = global i1 false, align 1
+@il_slot_TP_1__running = global ptr null, align 4
+@il_mem_TP_1_Q = global i1 false, align 1
+@il_slot_TP_1_Q = global ptr null, align 4
+@il_mem_TP_2_IN = global i1 false, align 1
+@il_slot_TP_2_IN = global ptr null, align 4
+@il_mem_TP_2_PT = global i32 0, align 4
+@il_slot_TP_2_PT = global ptr null, align 4
+@il_mem_TP_2__elapsed = global i32 0, align 4
+@il_slot_TP_2__elapsed = global ptr null, align 4
+@il_mem_TP_2__running = global i1 false, align 1
+@il_slot_TP_2__running = global ptr null, align 4
+@il_mem_TP_2_Q = global i1 false, align 1
+@il_slot_TP_2_Q = global ptr null, align 4
+@il_mem_TP_3_IN = global i1 false, align 1
+@il_slot_TP_3_IN = global ptr null, align 4
+@il_mem_TP_3_PT = global i32 0, align 4
+@il_slot_TP_3_PT = global ptr null, align 4
+@il_mem_TP_3__elapsed = global i32 0, align 4
+@il_slot_TP_3__elapsed = global ptr null, align 4
+@il_mem_TP_3__running = global i1 false, align 1
+@il_slot_TP_3__running = global ptr null, align 4
+@il_mem_TP_3_Q = global i1 false, align 1
+@il_slot_TP_3_Q = global ptr null, align 4
+@il_mem_TP_4_IN = global i1 false, align 1
+@il_slot_TP_4_IN = global ptr null, align 4
+@il_mem_TP_4_PT = global i32 0, align 4
+@il_slot_TP_4_PT = global ptr null, align 4
+@il_mem_TP_4__elapsed = global i32 0, align 4
+@il_slot_TP_4__elapsed = global ptr null, align 4
+@il_mem_TP_4__running = global i1 false, align 1
+@il_slot_TP_4__running = global ptr null, align 4
+@il_mem_TP_4_Q = global i1 false, align 1
+@il_slot_TP_4_Q = global ptr null, align 4
+define void @test_slots_init() {
+entry:
+  ; rtedge: 将来はタグ解決。当面は stack と同じく @il_mem_* を指して動作させる。
+  store ptr @il_mem_StartSW, ptr @il_slot_StartSW
+  store ptr @il_mem_EndSW, ptr @il_slot_EndSW
+  store ptr @il_mem_AI_1, ptr @il_slot_AI_1
+  store ptr @il_mem_Active, ptr @il_slot_Active
+  store ptr @il_mem_LimitOver, ptr @il_slot_LimitOver
+  store ptr @il_mem_LimitOverCount, ptr @il_slot_LimitOverCount
+  store ptr @il_mem_Err, ptr @il_slot_Err
+  store ptr @il_mem_TP1_Q, ptr @il_slot_TP1_Q
+  store ptr @il_mem_TP2_Q, ptr @il_slot_TP2_Q
+  store ptr @il_mem_TP3_Q, ptr @il_slot_TP3_Q
+  store ptr @il_mem_TP4_Q, ptr @il_slot_TP4_Q
+  store ptr @il_mem_LED1, ptr @il_slot_LED1
+  store ptr @il_mem_LED2, ptr @il_slot_LED2
+  store ptr @il_mem_CTU_1_CU, ptr @il_slot_CTU_1_CU
+  store ptr @il_mem_CTU_1_RESET, ptr @il_slot_CTU_1_RESET
+  store ptr @il_mem_CTU_1_PV, ptr @il_slot_CTU_1_PV
+  store ptr @il_mem_CTU_1__prev_cu, ptr @il_slot_CTU_1__prev_cu
+  store ptr @il_mem_CTU_1_Q, ptr @il_slot_CTU_1_Q
+  store ptr @il_mem_CTU_1_CV, ptr @il_slot_CTU_1_CV
+  store ptr @il_mem_TP_1_IN, ptr @il_slot_TP_1_IN
+  store ptr @il_mem_TP_1_PT, ptr @il_slot_TP_1_PT
+  store ptr @il_mem_TP_1__elapsed, ptr @il_slot_TP_1__elapsed
+  store ptr @il_mem_TP_1__running, ptr @il_slot_TP_1__running
+  store ptr @il_mem_TP_1_Q, ptr @il_slot_TP_1_Q
+  store ptr @il_mem_TP_2_IN, ptr @il_slot_TP_2_IN
+  store ptr @il_mem_TP_2_PT, ptr @il_slot_TP_2_PT
+  store ptr @il_mem_TP_2__elapsed, ptr @il_slot_TP_2__elapsed
+  store ptr @il_mem_TP_2__running, ptr @il_slot_TP_2__running
+  store ptr @il_mem_TP_2_Q, ptr @il_slot_TP_2_Q
+  store ptr @il_mem_TP_3_IN, ptr @il_slot_TP_3_IN
+  store ptr @il_mem_TP_3_PT, ptr @il_slot_TP_3_PT
+  store ptr @il_mem_TP_3__elapsed, ptr @il_slot_TP_3__elapsed
+  store ptr @il_mem_TP_3__running, ptr @il_slot_TP_3__running
+  store ptr @il_mem_TP_3_Q, ptr @il_slot_TP_3_Q
+  store ptr @il_mem_TP_4_IN, ptr @il_slot_TP_4_IN
+  store ptr @il_mem_TP_4_PT, ptr @il_slot_TP_4_PT
+  store ptr @il_mem_TP_4__elapsed, ptr @il_slot_TP_4__elapsed
+  store ptr @il_mem_TP_4__running, ptr @il_slot_TP_4__running
+  store ptr @il_mem_TP_4_Q, ptr @il_slot_TP_4_Q
+  ret void
+}
 define void @ctu_step(ptr %cu, ptr %reset, ptr %pv, ptr %q, ptr %cv, ptr %prev_cu) {
 entry:
   %cu_val = load i1, ptr %cu
@@ -40,64 +164,45 @@ entry:
 }
 define i32 @test() {
 entry:
-  %ptr_LimitOverCount = alloca i32
-  store i32 0, ptr %ptr_LimitOverCount
-  %ptr_ADD_Data = alloca i32
-  store i32 0, ptr %ptr_ADD_Data
-  %ptr_Start = alloca i1
-  store i1 false, ptr %ptr_Start
-  %ptr_End = alloca i1
-  store i1 false, ptr %ptr_End
-  %ptr_Err = alloca i1
-  store i1 false, ptr %ptr_Err
-  %ptr_TP1_Q = alloca i1
-  store i1 false, ptr %ptr_TP1_Q
-  %ptr_TP2_Q = alloca i1
-  store i1 false, ptr %ptr_TP2_Q
-  %ptr_StartSW = alloca i1
-  store i1 false, ptr %ptr_StartSW
-  %ptr_Active = alloca i1
-  store i1 false, ptr %ptr_Active
-  %ptr_EndSW = alloca i1
-  store i1 false, ptr %ptr_EndSW
-  %ptr_AI_1 = alloca i32
-  store i32 0, ptr %ptr_AI_1
-  %ptr_LimitOver = alloca i1
-  store i1 false, ptr %ptr_LimitOver
-  %ptr_CTU_1_CU = alloca i1
-  store i1 false, ptr %ptr_CTU_1_CU
-  %ptr_CTU_1_RESET = alloca i1
-  store i1 false, ptr %ptr_CTU_1_RESET
-  %ptr_CTU_1_PV = alloca i32
-  store i32 0, ptr %ptr_CTU_1_PV
-  %ptr_CTU_1__prev_cu = alloca i1
-  store i1 false, ptr %ptr_CTU_1__prev_cu
-  %ptr_CTU_1_Q = alloca i1
-  store i1 false, ptr %ptr_CTU_1_Q
-  %ptr_CTU_1_CV = alloca i32
-  store i32 0, ptr %ptr_CTU_1_CV
-  %ptr_TP_1_IN = alloca i1
-  store i1 false, ptr %ptr_TP_1_IN
-  %ptr_TP_1_PT = alloca i32
-  store i32 0, ptr %ptr_TP_1_PT
-  %ptr_TP_1__elapsed = alloca i32
-  store i32 0, ptr %ptr_TP_1__elapsed
-  %ptr_TP_1__running = alloca i1
-  store i1 false, ptr %ptr_TP_1__running
-  %ptr_TP_1_Q = alloca i1
-  store i1 false, ptr %ptr_TP_1_Q
-  %ptr_TP_2_IN = alloca i1
-  store i1 false, ptr %ptr_TP_2_IN
-  %ptr_TP_2_PT = alloca i32
-  store i32 0, ptr %ptr_TP_2_PT
-  %ptr_TP_2__elapsed = alloca i32
-  store i32 0, ptr %ptr_TP_2__elapsed
-  %ptr_TP_2__running = alloca i1
-  store i1 false, ptr %ptr_TP_2__running
-  %ptr_TP_2_Q = alloca i1
-  store i1 false, ptr %ptr_TP_2_Q
-  %ptr_LED1 = alloca i1
-  store i1 false, ptr %ptr_LED1
+  %ptr_StartSW = load ptr, ptr @il_slot_StartSW
+  %ptr_EndSW = load ptr, ptr @il_slot_EndSW
+  %ptr_AI_1 = load ptr, ptr @il_slot_AI_1
+  %ptr_Active = load ptr, ptr @il_slot_Active
+  %ptr_LimitOver = load ptr, ptr @il_slot_LimitOver
+  %ptr_LimitOverCount = load ptr, ptr @il_slot_LimitOverCount
+  %ptr_Err = load ptr, ptr @il_slot_Err
+  %ptr_TP1_Q = load ptr, ptr @il_slot_TP1_Q
+  %ptr_TP2_Q = load ptr, ptr @il_slot_TP2_Q
+  %ptr_TP3_Q = load ptr, ptr @il_slot_TP3_Q
+  %ptr_TP4_Q = load ptr, ptr @il_slot_TP4_Q
+  %ptr_LED1 = load ptr, ptr @il_slot_LED1
+  %ptr_LED2 = load ptr, ptr @il_slot_LED2
+  %ptr_CTU_1_CU = load ptr, ptr @il_slot_CTU_1_CU
+  %ptr_CTU_1_RESET = load ptr, ptr @il_slot_CTU_1_RESET
+  %ptr_CTU_1_PV = load ptr, ptr @il_slot_CTU_1_PV
+  %ptr_CTU_1__prev_cu = load ptr, ptr @il_slot_CTU_1__prev_cu
+  %ptr_CTU_1_Q = load ptr, ptr @il_slot_CTU_1_Q
+  %ptr_CTU_1_CV = load ptr, ptr @il_slot_CTU_1_CV
+  %ptr_TP_1_IN = load ptr, ptr @il_slot_TP_1_IN
+  %ptr_TP_1_PT = load ptr, ptr @il_slot_TP_1_PT
+  %ptr_TP_1__elapsed = load ptr, ptr @il_slot_TP_1__elapsed
+  %ptr_TP_1__running = load ptr, ptr @il_slot_TP_1__running
+  %ptr_TP_1_Q = load ptr, ptr @il_slot_TP_1_Q
+  %ptr_TP_2_IN = load ptr, ptr @il_slot_TP_2_IN
+  %ptr_TP_2_PT = load ptr, ptr @il_slot_TP_2_PT
+  %ptr_TP_2__elapsed = load ptr, ptr @il_slot_TP_2__elapsed
+  %ptr_TP_2__running = load ptr, ptr @il_slot_TP_2__running
+  %ptr_TP_2_Q = load ptr, ptr @il_slot_TP_2_Q
+  %ptr_TP_3_IN = load ptr, ptr @il_slot_TP_3_IN
+  %ptr_TP_3_PT = load ptr, ptr @il_slot_TP_3_PT
+  %ptr_TP_3__elapsed = load ptr, ptr @il_slot_TP_3__elapsed
+  %ptr_TP_3__running = load ptr, ptr @il_slot_TP_3__running
+  %ptr_TP_3_Q = load ptr, ptr @il_slot_TP_3_Q
+  %ptr_TP_4_IN = load ptr, ptr @il_slot_TP_4_IN
+  %ptr_TP_4_PT = load ptr, ptr @il_slot_TP_4_PT
+  %ptr_TP_4__elapsed = load ptr, ptr @il_slot_TP_4__elapsed
+  %ptr_TP_4__running = load ptr, ptr @il_slot_TP_4__running
+  %ptr_TP_4_Q = load ptr, ptr @il_slot_TP_4_Q
   %acc = alloca i1
   store i1 false, ptr %acc
   %int_acc = alloca i32
@@ -175,13 +280,55 @@ entry:
   store i1 %t38, ptr %acc
   %t39 = load i1, ptr %acc
   store i1 %t39, ptr %ptr_TP2_Q
-  %t40 = load i1, ptr %ptr_Err
+  %t40 = load i1, ptr %ptr_StartSW
   store i1 %t40, ptr %acc
   %t41 = load i1, ptr %acc
-  %t42 = load i1, ptr %ptr_TP2_Q
-  %t43 = and i1 %t41, %t42
-  store i1 %t43, ptr %acc
-  %t44 = load i1, ptr %acc
-  store i1 %t44, ptr %ptr_LED1
+  %t42 = load i1, ptr %ptr_TP4_Q
+  %t43 = xor i1 %t42, true
+  %t44 = and i1 %t41, %t43
+  store i1 %t44, ptr %acc
+  %t45 = load i1, ptr %acc
+  store i1 %t45, ptr %ptr_TP_3_IN
+  store i32 500, ptr %int_acc
+  %t46 = load i32, ptr %int_acc
+  store i32 %t46, ptr %ptr_TP_3_PT
+  call void @tp_step(ptr %ptr_TP_3_IN, ptr %ptr_TP_3_PT, ptr %ptr_TP_3_Q, ptr %ptr_TP_3__elapsed, ptr %ptr_TP_3__running)
+  %t47 = load i1, ptr %ptr_TP_3_Q
+  store i1 %t47, ptr %acc
+  %t48 = load i1, ptr %acc
+  store i1 %t48, ptr %ptr_TP3_Q
+  %t49 = load i1, ptr %ptr_StartSW
+  store i1 %t49, ptr %acc
+  %t50 = load i1, ptr %acc
+  %t51 = load i1, ptr %ptr_TP3_Q
+  %t52 = xor i1 %t51, true
+  %t53 = and i1 %t50, %t52
+  store i1 %t53, ptr %acc
+  %t54 = load i1, ptr %acc
+  store i1 %t54, ptr %ptr_TP_4_IN
+  store i32 500, ptr %int_acc
+  %t55 = load i32, ptr %int_acc
+  store i32 %t55, ptr %ptr_TP_4_PT
+  call void @tp_step(ptr %ptr_TP_4_IN, ptr %ptr_TP_4_PT, ptr %ptr_TP_4_Q, ptr %ptr_TP_4__elapsed, ptr %ptr_TP_4__running)
+  %t56 = load i1, ptr %ptr_TP_4_Q
+  store i1 %t56, ptr %acc
+  %t57 = load i1, ptr %acc
+  store i1 %t57, ptr %ptr_TP4_Q
+  %t58 = load i1, ptr %ptr_StartSW
+  store i1 %t58, ptr %acc
+  %t59 = load i1, ptr %acc
+  %t60 = load i1, ptr %ptr_TP3_Q
+  %t61 = and i1 %t59, %t60
+  store i1 %t61, ptr %acc
+  %t62 = load i1, ptr %acc
+  store i1 %t62, ptr %ptr_LED2
+  %t63 = load i1, ptr %ptr_Err
+  store i1 %t63, ptr %acc
+  %t64 = load i1, ptr %acc
+  %t65 = load i1, ptr %ptr_TP2_Q
+  %t66 = and i1 %t64, %t65
+  store i1 %t66, ptr %acc
+  %t67 = load i1, ptr %acc
+  store i1 %t67, ptr %ptr_LED1
   ret i32 0
 }

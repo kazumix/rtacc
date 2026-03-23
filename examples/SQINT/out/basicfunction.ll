@@ -7,137 +7,85 @@ target triple = "i386-pc-windows-msvc19.44.35223"
 
 $LibVersion_0x0701 = comdat any
 
-$"??_C@_0P@FHFAIKGM@BasicFunctions?$AA@" = comdat any
-
-$"??_C@_0BC@OECJMJAO@NumBasicFunctions?$AA@" = comdat any
-
 $"??_C@_0CJ@GAGLDBKC@instruction?5hash?5conflict?$CB?5?$CFs?4?5s@" = comdat any
 
 $"??_C@_0BM@NHPPFOEA@?5?5function?$CI?$CF03d?$CJ?5?$CF?914s?5?5?$CFp?6?$AA@" = comdat any
 
 @LibVersion_0x0701 = weak_odr dso_local local_unnamed_addr global i32 1, comdat, align 4
 @status_basicfunc = dso_local local_unnamed_addr global i32 0, align 4
-@BasicFunctions = dso_local local_unnamed_addr global ptr null, align 4
-@NumBasicFunctions = dso_local local_unnamed_addr global i16 0, align 2
-@hBasicFuncRSL = internal unnamed_addr global i16 0, align 2
-@"??_C@_0P@FHFAIKGM@BasicFunctions?$AA@" = linkonce_odr dso_local unnamed_addr constant [15 x i8] c"BasicFunctions\00", comdat, align 1
-@"??_C@_0BC@OECJMJAO@NumBasicFunctions?$AA@" = linkonce_odr dso_local unnamed_addr constant [18 x i8] c"NumBasicFunctions\00", comdat, align 1
+@NumBasicFunctions = external dso_local local_unnamed_addr global i16, align 2
+@BasicFunctions = external dso_local global [0 x %struct.MNMTEMPLATE], align 1
 @InstructionCatalog = external dso_local local_unnamed_addr global [0 x ptr], align 4
 @"??_C@_0CJ@GAGLDBKC@instruction?5hash?5conflict?$CB?5?$CFs?4?5s@" = linkonce_odr dso_local unnamed_addr constant [41 x i8] c"instruction hash conflict! %s. skipped.\0A\00", comdat, align 1
 @"??_C@_0BM@NHPPFOEA@?5?5function?$CI?$CF03d?$CJ?5?$CF?914s?5?5?$CFp?6?$AA@" = linkonce_odr dso_local unnamed_addr constant [28 x i8] c"  function(%03d) %-14s  %p\0A\00", comdat, align 1
 @str = private unnamed_addr constant [19 x i8] c"Basicfunction list\00", align 1
 @str.1 = private unnamed_addr constant [6 x i8] c"  N/A\00", align 1
 
-; Function Attrs: nounwind
-define dso_local void @Basicfunction_Load(ptr noundef %0) local_unnamed_addr #0 {
-  %2 = tail call zeroext i16 @INtime_RslLoad(ptr noundef %0) #5
-  store i16 %2, ptr @hBasicFuncRSL, align 2
+; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(readwrite, argmem: none, inaccessiblemem: none, target_mem0: none, target_mem1: none)
+define dso_local void @Basicfunction_Load(ptr noundef readnone captures(none) %0) local_unnamed_addr #0 {
+  %2 = load i16, ptr @NumBasicFunctions, align 2
   %3 = icmp eq i16 %2, 0
-  br i1 %3, label %15, label %4
+  br i1 %3, label %5, label %4
 
 4:                                                ; preds = %1
-  %5 = tail call ptr @GetRtProcAddress(i16 noundef zeroext %2, ptr noundef nonnull @"??_C@_0P@FHFAIKGM@BasicFunctions?$AA@") #5
-  store ptr %5, ptr @BasicFunctions, align 4
-  %6 = load i16, ptr @hBasicFuncRSL, align 2
-  %7 = tail call ptr @GetRtProcAddress(i16 noundef zeroext %6, ptr noundef nonnull @"??_C@_0BC@OECJMJAO@NumBasicFunctions?$AA@") #5
-  %8 = load ptr, ptr @BasicFunctions, align 4
-  %9 = icmp eq ptr %8, null
-  %10 = icmp eq ptr %7, null
-  %11 = select i1 %9, i1 true, i1 %10
-  br i1 %11, label %12, label %13
-
-12:                                               ; preds = %4
-  tail call void @Errorlog_Add(i32 noundef 0, i32 noundef 208, ptr noundef %0) #5
-  br label %15
-
-13:                                               ; preds = %4
-  %14 = load i16, ptr %7, align 2
-  store i16 %14, ptr @NumBasicFunctions, align 2
   store i32 6, ptr @status_basicfunc, align 4
-  br label %15
+  br label %5
 
-15:                                               ; preds = %1, %12, %13
+5:                                                ; preds = %4, %1
   ret void
 }
 
-declare dso_local zeroext i16 @INtime_RslLoad(ptr noundef) local_unnamed_addr #1
-
-declare dso_local ptr @GetRtProcAddress(i16 noundef zeroext, ptr noundef) local_unnamed_addr #1
-
-declare dso_local void @Errorlog_Add(i32 noundef, i32 noundef, ptr noundef) local_unnamed_addr #1
-
-; Function Attrs: nounwind
-define dso_local void @Basicfunction_Unload() local_unnamed_addr #0 {
-  %1 = load i16, ptr @hBasicFuncRSL, align 2
-  %2 = icmp eq i16 %1, 0
-  br i1 %2, label %5, label %3
-
-3:                                                ; preds = %0
-  %4 = tail call zeroext i8 @FreeRtLibrary(i16 noundef zeroext %1) #5
-  store i16 0, ptr @hBasicFuncRSL, align 2
-  br label %5
-
-5:                                                ; preds = %3, %0
+; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(write, argmem: none, inaccessiblemem: none, target_mem0: none, target_mem1: none)
+define dso_local void @Basicfunction_Unload() local_unnamed_addr #1 {
   store i32 0, ptr @status_basicfunc, align 4
   ret void
 }
 
-declare dso_local zeroext i8 @FreeRtLibrary(i16 noundef zeroext) local_unnamed_addr #1
-
 ; Function Attrs: nounwind
-define dso_local noundef i32 @Basicfunction_CreateCatalog() local_unnamed_addr #0 {
+define dso_local noundef i32 @Basicfunction_CreateCatalog() local_unnamed_addr #2 {
   %1 = load i16, ptr @NumBasicFunctions, align 2
   %2 = icmp eq i16 %1, 0
-  br i1 %2, label %28, label %3
+  br i1 %2, label %21, label %3
 
-3:                                                ; preds = %0
-  %4 = load ptr, ptr @BasicFunctions, align 4
-  br label %5
+3:                                                ; preds = %0, %16
+  %4 = phi i32 [ %17, %16 ], [ 0, %0 ]
+  %5 = getelementptr inbounds nuw %struct.MNMTEMPLATE, ptr @BasicFunctions, i32 %4
+  %6 = load ptr, ptr %5, align 1
+  %7 = tail call zeroext i16 @Instruction_CalcHash(ptr noundef %6) #7
+  %8 = zext i16 %7 to i32
+  %9 = getelementptr inbounds nuw ptr, ptr @InstructionCatalog, i32 %8
+  %10 = load ptr, ptr %9, align 4
+  %11 = icmp eq ptr %10, null
+  br i1 %11, label %15, label %12
 
-5:                                                ; preds = %3, %22
-  %6 = phi ptr [ %23, %22 ], [ %4, %3 ]
-  %7 = phi i32 [ %24, %22 ], [ 0, %3 ]
-  %8 = getelementptr inbounds nuw %struct.MNMTEMPLATE, ptr %6, i32 %7
-  %9 = load ptr, ptr %8, align 1
-  %10 = tail call zeroext i16 @Instruction_CalcHash(ptr noundef %9) #5
-  %11 = zext i16 %10 to i32
-  %12 = getelementptr inbounds nuw ptr, ptr @InstructionCatalog, i32 %11
-  %13 = load ptr, ptr %12, align 4
-  %14 = icmp eq ptr %13, null
-  %15 = load ptr, ptr @BasicFunctions, align 4
-  %16 = getelementptr inbounds nuw %struct.MNMTEMPLATE, ptr %15, i32 %7
-  br i1 %14, label %21, label %17
+12:                                               ; preds = %3
+  %13 = load ptr, ptr %5, align 1
+  %14 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0CJ@GAGLDBKC@instruction?5hash?5conflict?$CB?5?$CFs?4?5s@", ptr noundef %13)
+  br label %16
 
-17:                                               ; preds = %5
-  %18 = load ptr, ptr %16, align 1
-  %19 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0CJ@GAGLDBKC@instruction?5hash?5conflict?$CB?5?$CFs?4?5s@", ptr noundef %18)
-  %20 = load ptr, ptr @BasicFunctions, align 4
-  br label %22
+15:                                               ; preds = %3
+  store ptr %5, ptr %9, align 4
+  br label %16
 
-21:                                               ; preds = %5
-  store ptr %16, ptr %12, align 4
-  br label %22
+16:                                               ; preds = %15, %12
+  %17 = add nuw nsw i32 %4, 1
+  %18 = load i16, ptr @NumBasicFunctions, align 2
+  %19 = zext i16 %18 to i32
+  %20 = icmp samesign ult i32 %17, %19
+  br i1 %20, label %3, label %21, !llvm.loop !7
 
-22:                                               ; preds = %21, %17
-  %23 = phi ptr [ %15, %21 ], [ %20, %17 ]
-  %24 = add nuw nsw i32 %7, 1
-  %25 = load i16, ptr @NumBasicFunctions, align 2
-  %26 = zext i16 %25 to i32
-  %27 = icmp samesign ult i32 %24, %26
-  br i1 %27, label %5, label %28, !llvm.loop !7
-
-28:                                               ; preds = %22, %0
+21:                                               ; preds = %16, %0
   store i32 2, ptr @status_basicfunc, align 4
   ret i32 0
 }
 
-declare dso_local zeroext i16 @Instruction_CalcHash(ptr noundef) local_unnamed_addr #1
+declare dso_local zeroext i16 @Instruction_CalcHash(ptr noundef) local_unnamed_addr #3
 
 ; Function Attrs: nofree nounwind
-declare dso_local noundef i32 @printf(ptr noundef readonly captures(none), ...) local_unnamed_addr #2
+declare dso_local noundef i32 @printf(ptr noundef readonly captures(none), ...) local_unnamed_addr #4
 
 ; Function Attrs: nofree nounwind
-define dso_local void @Basicfunction_Display() local_unnamed_addr #3 {
+define dso_local void @Basicfunction_Display() local_unnamed_addr #5 {
   %1 = tail call i32 @puts(ptr nonnull dereferenceable(1) @str)
   %2 = load i16, ptr @NumBasicFunctions, align 2
   %3 = icmp eq i16 %2, 0
@@ -145,37 +93,38 @@ define dso_local void @Basicfunction_Display() local_unnamed_addr #3 {
 
 4:                                                ; preds = %0
   %5 = tail call i32 @puts(ptr nonnull dereferenceable(1) @str.1)
-  br label %20
+  br label %19
 
 6:                                                ; preds = %0, %6
-  %7 = phi i32 [ %15, %6 ], [ 1, %0 ]
-  %8 = phi i32 [ %16, %6 ], [ 0, %0 ]
-  %9 = load ptr, ptr @BasicFunctions, align 4
-  %10 = getelementptr inbounds nuw %struct.MNMTEMPLATE, ptr %9, i32 %8
-  %11 = load ptr, ptr %10, align 1
-  %12 = getelementptr inbounds nuw i8, ptr %10, i32 13
-  %13 = load ptr, ptr %12, align 1
-  %14 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0BM@NHPPFOEA@?5?5function?$CI?$CF03d?$CJ?5?$CF?914s?5?5?$CFp?6?$AA@", i32 noundef %7, ptr noundef %11, ptr noundef %13)
-  %15 = add nuw nsw i32 %7, 1
-  %16 = add nuw nsw i32 %8, 1
-  %17 = load i16, ptr @NumBasicFunctions, align 2
-  %18 = zext i16 %17 to i32
-  %19 = icmp samesign ult i32 %16, %18
-  br i1 %19, label %6, label %20, !llvm.loop !9
+  %7 = phi i32 [ %14, %6 ], [ 1, %0 ]
+  %8 = phi i32 [ %15, %6 ], [ 0, %0 ]
+  %9 = getelementptr inbounds nuw %struct.MNMTEMPLATE, ptr @BasicFunctions, i32 %8
+  %10 = load ptr, ptr %9, align 1
+  %11 = getelementptr inbounds nuw i8, ptr %9, i32 13
+  %12 = load ptr, ptr %11, align 1
+  %13 = tail call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @"??_C@_0BM@NHPPFOEA@?5?5function?$CI?$CF03d?$CJ?5?$CF?914s?5?5?$CFp?6?$AA@", i32 noundef %7, ptr noundef %10, ptr noundef %12)
+  %14 = add nuw nsw i32 %7, 1
+  %15 = add nuw nsw i32 %8, 1
+  %16 = load i16, ptr @NumBasicFunctions, align 2
+  %17 = zext i16 %16 to i32
+  %18 = icmp samesign ult i32 %15, %17
+  br i1 %18, label %6, label %19, !llvm.loop !9
 
-20:                                               ; preds = %6, %4
+19:                                               ; preds = %6, %4
   ret void
 }
 
 ; Function Attrs: nofree nounwind
-declare noundef i32 @puts(ptr noundef readonly captures(none)) local_unnamed_addr #4
+declare noundef i32 @puts(ptr noundef readonly captures(none)) local_unnamed_addr #6
 
-attributes #0 = { nounwind "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #1 = { "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #2 = { nofree nounwind "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #3 = { nofree nounwind "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
-attributes #4 = { nofree nounwind }
-attributes #5 = { nounwind }
+attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(readwrite, argmem: none, inaccessiblemem: none, target_mem0: none, target_mem1: none) "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { mustprogress nofree norecurse nosync nounwind willreturn memory(write, argmem: none, inaccessiblemem: none, target_mem0: none, target_mem1: none) "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #2 = { nounwind "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #3 = { "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #4 = { nofree nounwind "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #5 = { nofree nounwind "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #6 = { nofree nounwind }
+attributes #7 = { nounwind }
 
 !llvm.dbg.cu = !{!0}
 !llvm.module.flags = !{!2, !3, !4, !5}

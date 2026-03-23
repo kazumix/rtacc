@@ -1,0 +1,14 @@
+// LED1: 従来どおり SW1 AND SW2 OR SW3
+// LED2: LED1 が ON のときのみ 300ms 周期フリッカ（600ms で ON/OFF 各 300ms）
+FUNCTION LED2Check : BOOL
+VAR_INPUT
+    SW1 : BOOL;
+    SW2 : BOOL;
+    SW3 : BOOL;
+    MsTick : INT;
+END_VAR
+
+LED1 := SW1 AND SW2 OR SW3;
+LED2 := LED1 AND ((MsTick MOD 600) < 300);
+
+END_FUNCTION

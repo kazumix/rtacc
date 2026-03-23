@@ -18,8 +18,8 @@ WORD				NumBasicFunctions = 0;
 
 #else
 
-__declspec(dllimport) struct MNMTEMPLATE	BasicFunctions[];
-__declspec(dllimport) WORD					NumBasicFunctions;
+extern struct MNMTEMPLATE	BasicFunctions[];
+extern WORD					NumBasicFunctions;
 
 #endif
 
@@ -60,6 +60,12 @@ void Basicfunction_Load(char* RslName)
 		}
 	}
 
+#else
+
+	(void)RslName;
+	if (NumBasicFunctions != 0)
+		status_basicfunc = STATUS_RUN;
+
 #endif
 
 }
@@ -78,6 +84,10 @@ void Basicfunction_Unload(void)
 	}
 
 	// 本機能の動作状態を更新
+	status_basicfunc = STATUS_STOP;
+
+#else
+
 	status_basicfunc = STATUS_STOP;
 
 #endif

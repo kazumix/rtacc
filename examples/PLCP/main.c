@@ -58,9 +58,18 @@ int plcmain(int argc, char* argv[])
 	SQTBL_Initialize();
 
 	// ファンクションのインストール処理（なければデフォルト無処理が適用されます）(Errorlog出力あり)
+#if DYNAMIC_LOAD_IEC
 	Basicfunction_Load("PLCPIEC.rsl");
+#else
+	Basicfunction_Load(NULL);
+#endif
+#if DYNAMIC_LOAD_FB
 	Functionblock_Load("PLCPEN.rsl");
 	Functionblock_Load("PLCPFB.rsl");
+#else
+	/* ビルトイン: PLCPFB のテーブルをリンクし、1 回で登録（PLCPEN.rsl は別途ビルトイン化が必要） */
+	Functionblock_Load(NULL);
+#endif
 
 	// 予約語ハッシュテーブルの構築
 	Reservedword_CreateCatalog();

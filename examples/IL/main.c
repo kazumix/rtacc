@@ -1,3 +1,5 @@
+#include "rtedge_tags.h"
+
 #ifdef __INTIME__
 #include <rt.h>
 #else
@@ -9,11 +11,13 @@ static unsigned char RtSleepEx(int msec)
 }
 #endif
 
-/* IL 側で生成される POU 関数（test.il -> test） */
+/* IL 側で生成される POU: test */
 extern int test(void);
 
 int main(void)
 {
+    IlRtedgeTags_Init();
+
     for (;;) {
         (void)test();
         RtSleepEx(1); // 1ms 周期で test を実行

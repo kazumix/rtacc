@@ -1,0 +1,33 @@
+{
+  "toolsets": {
+    "llvm": {
+      "compiler": "clang",
+      "linker": "lld",
+      "compiler_flags": null,
+      "linker_flags": [
+        "/VERSION:21076.20053",
+        "/HEAP:1048576,4096",
+        "/STACK:1048576,4096"
+      ]
+    }
+  },
+  "targets": [
+    {
+      "name": "default",
+      "toolset": "llvm",
+      "output_dir": "out",
+      "output": "GEil.rta",
+      "optimize": "3",
+      "combine_ir": true,
+      "compile_only": false,
+      "includes": null,
+      "sources": [
+        "main.c",
+        "GEtest.IL"
+      ],
+      "libs": null,
+      "defines": null,
+      "flags": null
+    }
+  ]
+}

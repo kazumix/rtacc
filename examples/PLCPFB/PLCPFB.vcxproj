@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|INtime">
+      <Configuration>Debug</Configuration>
+      <Platform>INtime</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|INtime">
+      <Configuration>Release</Configuration>
+      <Platform>INtime</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\APIcall\fnapi.c" />
+    <ClCompile Include="bistable.c" />
+    <ClCompile Include="Counter.c" />
+    <ClCompile Include="File.c" />
+    <ClCompile Include="PID.c" />
+    <ClCompile Include="PLCPFB.c" />
+    <ClCompile Include="SenseEdge.c" />
+    <ClCompile Include="Timer.c" />
+    <ClCompile Include="util.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PLCPFB.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PLCPFB.rc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B841253C-123C-4239-9B7C-F8B46616EF32}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <INtimeArgs>-INTPRT/C:\desktop\pcplc\test.IL</INtimeArgs>
+    <INtimeRsldb>$(OUTDIR)\sqint.rta </INtimeRsldb>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <INtimeArgs>-INTPRT/C:\desktop\pcplc\test.IL</INtimeArgs>
+    <INtimeRsldb>$(OUTDIR)\sqint.rta </INtimeRsldb>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <ClCompile>
+    </ClCompile>
+    <Link>
+      <Version>21076.20052</Version>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>vshelper17.lib;clib.lib;rt.lib;mn_pid2.lib;eghgapi.lib</AdditionalDependencies>
+      <OutputFile>$(SolutionDir)$(Configuration)\\PLCPFB.rsl</OutputFile>
+      <AdditionalLibraryDirectories>..\..\0060ツールソフト\RT-edge3701\Library\Rt\;..\..\0060ツールソフト\MN_PID;%(AdditionalLibraryDirectories);..\..\0060ツールソフト\RT-edge\Library\Rt</AdditionalLibraryDirectories>
+      <GenerateMapFile>true</GenerateMapFile>
+      <AddModuleNamesToAssembly>
+      </AddModuleNamesToAssembly>
+    </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <PreprocessorDefinitions>_USRDLL;PLCPFB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PLCP;$(INtime)rt\include\network7;$(INtime)rt\include;..\..\0060ツールソフト\MN_PID;..\..\0060ツールソフト\RT-edge\Library</AdditionalIncludeDirectories>
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <ClCompile>
+    </ClCompile>
+    <Link>
+      <Version>21076.20052</Version>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>vshelper17.lib;clib.lib;rt.lib;mn_pid2.lib;eghgapi.lib</AdditionalDependencies>
+      <OutputFile>$(SolutionDir)$(Configuration)\\PLCPFB.rsl</OutputFile>
+      <AdditionalLibraryDirectories>..\..\0060ツールソフト\RT-edge3701\Library\Rt\;$(INtime)rt\lib;%(AdditionalLibraryDirectories);..\..\0060ツールソフト\MN_PID;;..\..\0060ツールソフト\RT-edge\Library\Rt</AdditionalLibraryDirectories>
+      <AddModuleNamesToAssembly>
+      </AddModuleNamesToAssembly>
+    </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <PreprocessorDefinitions>_USRDLL;PLCPFB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PLCP;$(INtime)rt\include\network7;$(INtime)rt\include;..\..\0060ツールソフト\MN_PID;..\..\0060ツールソフト\RT-edge\Library</AdditionalIncludeDirectories>
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

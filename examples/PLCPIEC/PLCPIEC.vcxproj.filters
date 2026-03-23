@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Arith">
+      <UniqueIdentifier>{c523064c-6177-457a-8f7e-ed08a7439204}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Comp">
+      <UniqueIdentifier>{fc2d1161-8937-4acf-ab8a-40a235f03356}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Conv">
+      <UniqueIdentifier>{d0fdaa4b-fbd8-4926-aed3-8a97896bd3c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PLCPIEC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="check.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BcdTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="BoolTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="ByteTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="ADD.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="DIntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="DIV.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="DWordTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="NEG.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="EQ.c">
+      <Filter>Source Files\Comp</Filter>
+    </ClCompile>
+    <ClCompile Include="GE.c">
+      <Filter>Source Files\Comp</Filter>
+    </ClCompile>
+    <ClCompile Include="GT.c">
+      <Filter>Source Files\Comp</Filter>
+    </ClCompile>
+    <ClCompile Include="IntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="LE.c">
+      <Filter>Source Files\Comp</Filter>
+    </ClCompile>
+    <ClCompile Include="LIntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="LRealTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="LT.c">
+      <Filter>Source Files\Comp</Filter>
+    </ClCompile>
+    <ClCompile Include="MOD.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="MOVE.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="MUL.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="RealTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="SIntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="SUB.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="UDIntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="UIntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="USIntTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="WordTo.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="Trunc.c">
+      <Filter>Source Files\Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="EXPT.c">
+      <Filter>Source Files\Arith</Filter>
+    </ClCompile>
+    <ClCompile Include="NE.c">
+      <Filter>Source Files\Comp</Filter>
+    </ClCompile>
+    <ClCompile Include="LogicOpe.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RotShift.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BitOpe.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StringOpe.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Select.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\APIcall\fnapi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BitMask.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PLCPIEC.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PLCPIEC.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

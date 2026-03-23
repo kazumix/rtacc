@@ -363,6 +363,9 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 
 			// 1) .st -> .ll （外部 ST コンパイラ）
 			args0 := []string{pathSrc, "-o", llPath}
+			if mem := strings.TrimSpace(t.IlMemory); mem != "" {
+				args0 = append(args0, "--memory="+mem)
+			}
 			if err := run(llstExe, args0, "ST→LL"); err != nil {
 				return err
 			}
@@ -406,6 +409,9 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 
 			// 1) .il -> .ll （外部 IL コンパイラ）
 			args0 := []string{pathSrc, "-o", llPath}
+			if mem := strings.TrimSpace(t.IlMemory); mem != "" {
+				args0 = append(args0, "--memory="+mem)
+			}
 			if err := run(llilExe, args0, "IL→LL"); err != nil {
 				return err
 			}

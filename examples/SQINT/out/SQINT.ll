@@ -27,7 +27,8 @@ attributes #3 = { nounwind }
 
 !llvm.dbg.cu = !{!0}
 !llvm.module.flags = !{!2, !3, !4, !5}
-!llvm.ident = !{!6}
+!llvm.linker.options = !{!6, !7}
+!llvm.ident = !{!8}
 
 !0 = distinct !DICompileUnit(language: DW_LANG_C11, file: !1, producer: "clang version 22.1.1 (https://github.com/llvm/llvm-project fef02d48c08db859ef83f84232ed78bd9d1c323a)", isOptimized: true, runtimeVersion: 0, emissionKind: NoDebug, splitDebugInlining: false, nameTableKind: None)
 !1 = !DIFile(filename: "SQINT.c", directory: "D:\\work\\rtacc\\examples\\SQINT")
@@ -35,4 +36,6 @@ attributes #3 = { nounwind }
 !3 = !{i32 2, !"Debug Info Version", i32 3}
 !4 = !{i32 1, !"wchar_size", i32 2}
 !5 = !{i32 1, !"MaxTLSAlign", i32 65536}
-!6 = !{!"clang version 22.1.1 (https://github.com/llvm/llvm-project fef02d48c08db859ef83f84232ed78bd9d1c323a)"}
+!6 = !{!"/DEFAULTLIB:Debug\\PLCPIEC.lib"}
+!7 = !{!"/DEFAULTLIB:Debug\\PLCPFB.lib"}
+!8 = !{!"clang version 22.1.1 (https://github.com/llvm/llvm-project fef02d48c08db859ef83f84232ed78bd9d1c323a)"}

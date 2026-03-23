@@ -36,6 +36,12 @@ type Target struct {
 	Libs        []string `json:"libs"`
 	Defines     []string `json:"defines"`
 	Flags       []string `json:"flags"`        // ターゲット固有の追加フラグ
+	// CombineIR は true のとき全 .ll を llvm-link して 1 つの .obj にまとめ、
+	// 結合 IR に対して再最適化する（クロスファイルのインライン等に有利）。
+	// 省略時は rtacc 既定（llvm-link が利用可能なら有効）。CLI で -combine-ir を指定した場合は JSON より CLI を優先。
+	CombineIR *bool `json:"combine_ir,omitempty"`
+	// IlMemory は llil（.il→.ll）および llst（.st→.ll）向け。空または未指定なら stack（既定）。"rtedge" で @il_slot_* と POU_slots_init を生成。
+	IlMemory string `json:"il_memory,omitempty"`
 }
 
 // LoadFile は JSON ファイルを読み込み、環境変数を展開して返す。
@@ -83,6 +89,7 @@ func ExpandProject(p *Project) {
 		p.Targets[i].Libs = expandStrings(p.Targets[i].Libs)
 		p.Targets[i].Defines = expandStrings(p.Targets[i].Defines)
 		p.Targets[i].Flags = expandStrings(p.Targets[i].Flags)
+		p.Targets[i].IlMemory = expandOne(p.Targets[i].IlMemory)
 	}
 }
 

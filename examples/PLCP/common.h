@@ -57,13 +57,17 @@ typedef struct
 
 // PLCPIEC.RSLのリンク方法指定
 // 1 = ダイナミックロードする
-// 0 = スタティックロードする
+// 0 = PLCPIEC を同一イメージにリンク（rtacc -D 等で上書き可）
+#ifndef DYNAMIC_LOAD_IEC
 #define	DYNAMIC_LOAD_IEC		1
+#endif
 
 // PLCPFB.RSLのリンク方法指定
 // 1 = ダイナミックロードする
-// 0 = スタティックロードする
+// 0 = PLCPFB を同一イメージにリンク（rtacc -D 等で上書き可）
+#ifndef DYNAMIC_LOAD_FB
 #define DYNAMIC_LOAD_FB			1
+#endif
 
 
 // 構造体アライメント

@@ -1,0 +1,4 @@
+# INtime RTA は 32bit (i386) のため i686-pc-windows-msvc でビルドする。
+# 初回: rustup target add i686-pc-windows-msvc
+[build]
+target = "i686-pc-windows-msvc"

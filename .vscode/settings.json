@@ -1,4 +1,11 @@
 {
+    // ワークスペース共通: rustup（%USERPROFILE%\.cargo\bin）を PATH 先頭に。スタンドアロン Rust より rustc / cargo / rust-src を優先。
+    "rust-analyzer.server.extraEnv": {
+        "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:PATH}"
+    },
+    "terminal.integrated.env.windows": {
+        "PATH": "${env:USERPROFILE}\\.cargo\\bin;${env:PATH}"
+    },
     "chat.tools.terminal.autoApprove": {
         "/^Get-Item \"d:\\\\work\\\\rtacc\\\\bin\\\\rtacc\\.exe\" -ErrorAction SilentlyContinue \\| Select-Object FullName$/": {
             "approve": true,

@@ -1,0 +1,12 @@
+[package]
+name = "rust_rt_mailbox"
+version = "0.1.0"
+edition = "2021"
+description = "INtime RTA: 共有RTメモリ + メールボックスでハンドル渡し（2スレッド）"
+
+[lib]
+name = "rust_rt_mailbox"
+path = "main.rs"
+crate-type = ["staticlib"]
+
+[dependencies]

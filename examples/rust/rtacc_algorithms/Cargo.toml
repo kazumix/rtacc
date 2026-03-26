@@ -1,0 +1,20 @@
+[package]
+name = "rust_rt_algorithms"
+version = "0.1.0"
+edition = "2021"
+description = "INtime RTA: heapless（BinaryHeap）+ micromath（sqrt）の no_std サンプル"
+
+[lib]
+crate-type = ["staticlib"]
+path = "src/lib.rs"
+
+[dependencies]
+heapless = "0.8"
+libm = "0.2"
+micromath = "2.1"
+
+[profile.release]
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

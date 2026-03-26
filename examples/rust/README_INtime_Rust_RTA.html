@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja-JP" xml:lang="ja-JP">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>INtime 向け Rust と RTA ビルド</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown.min.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">INtime 向け Rust と RTA ビルド</h1>
+<p class="subtitle">外部ライブラリ・アルゴリズム・データ構造・INtime.rs
+ラッパ・rtacc 手順</p>
+</header>
+<h1 id="この文書の目的">1. この文書の目的</h1>
+<p><code>examples/rust/</code> 配下の INtime RTA 向け Rust
+サンプルを、次の観点で整理する。</p>
+<ul>
+<li><strong>Rust 外部クレート（ライブラリ）</strong>を
+<code>no_std</code> / 32bit RTA で使うときの考え方</li>
+<li><strong>代表的なアルゴリズム</strong>と、<strong>FIFO・スタック・ヒープ</strong>などリスト／コンテナのイメージ</li>
+<li><strong><code>INtime.rs</code></strong> による INtime API
+のラッパ設計（FFI と RAII）</li>
+<li><strong><code>rtacc</code></strong> を使った
+<strong><code>.rta</code> ビルド</strong>の具体手順</li>
+</ul>
+<p>PDF は同ディレクトリの <code>build_readme_pdf.ps1</code>
+で生成できる（Pandoc 等の有無に依存）。</p>
+<hr />
+<h1 id="ディレクトリ構成抜粋">2. ディレクトリ構成（抜粋）</h1>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>パス</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INtime.rs</code></td>
+<td>INtime <code>rt.lib</code> / <code>rt.h</code> 相当の <strong>FFI と
+RAII ラッパ</strong>（共有）</td>
+</tr>
+<tr>
+<td><code>main.rs</code> + <code>build_ll.ps1</code></td>
+<td><strong>メールボックス</strong>サンプル（依存クレートなし、<code>rustc</code>
+直叩きで <code>.ll</code>）</td>
+</tr>
+<tr>
+<td><code>rtacc_algorithms/</code></td>
+<td><strong>heapless / libm / micromath</strong>
+を使うサンプル（<strong>Cargo</strong> で <code>.ll</code>）</td>
+</tr>
+<tr>
+<td><code>rtacc_algorithms/project.json</code></td>
+<td><code>rtacc</code> 用プロジェクト定義</td>
+</tr>
+<tr>
+<td><code>../../bin/rtacc.exe</code></td>
+<td>リポジトリビルド済みのビルドドライバ（パスは環境による）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="intime-向け-rust-の前提">3. INtime 向け Rust の前提</h1>
+<ul>
+<li><strong>ターゲット</strong>: INtime RTA は
+<strong>32bit（i386）</strong> のため、<code>i686-pc-windows-msvc</code>
+でビルドする。</li>
+<li><strong><code>#![no_std]</code></strong>:
+標準ライブラリは使わない。ヒープは原則 <strong>固定長</strong> か INtime
+の <code>AllocateRtMemory</code> などに寄せる。</li>
+<li><strong><code>#![no_main]</code></strong>: エントリは C ABI の
+<code>main</code>（<code>#[no_mangle] pub extern "C" fn main</code>）。</li>
+<li><strong>クレート種別</strong>: <code>staticlib</code> として LLVM
+IR（<code>.ll</code>）を出し、<code>rtacc</code> が clang
+でオブジェクト化して <code>clib</code> / <code>rt.lib</code>
+とリンクして <code>.rta</code> を作る。</li>
+<li><strong>パニック</strong>: 通常
+<strong><code>panic = "abort"</code></strong>（<code>Cargo.toml</code>
+の <code>[profile.*]</code>）を指定する。</li>
+<li><strong>rustc の PATH</strong>: <code>Program Files</code>
+配下の単体 Rust には <strong>i686 用 <code>rustlib</code>
+が無い</strong>ことがある。
+<strong><code>%USERPROFILE%\.cargo\bin</code> を PATH
+先頭</strong>にし、<strong>rustup 管理の <code>rustc</code></strong>
+を使うと安全。</li>
+</ul>
+<hr />
+<h1 id="外部クレートcargoの使い方">4. 外部クレート（Cargo）の使い方</h1>
+<h2 id="手順の概要">4.1 手順の概要</h2>
+<ol type="1">
+<li><code>examples/rust/rtacc_algorithms/</code> で
+<strong><code>cargo build --release</code></strong>（<code>.cargo/config.toml</code>
+で <code>i686-pc-windows-msvc</code> を既定にできる）。</li>
+<li><strong><code>cargo rustc --release -- --emit=llvm-ir</code></strong>
+で依存クレートを同梱した <strong>単一の <code>.ll</code></strong>
+を得る（<code>build_ll.ps1</code> が <code>deps</code> から
+<code>out/rust_rt_algorithms.ll</code> にコピー）。</li>
+<li><strong><code>rtacc project.json --toolset llvm</code></strong> で
+<code>out/app.rta</code> を生成。</li>
+</ol>
+<h2 id="選定の目安">4.2 選定の目安</h2>
+<table>
+<colgroup>
+<col style="width: 54%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>要件</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>no_std</code> 対応</td>
+<td><code>heapless</code>, <code>libm</code>, <code>micromath</code>
+など</td>
+</tr>
+<tr>
+<td>浮動小数</td>
+<td><strong><code>libm</code></strong>
+は移植性の高い実装。<strong><code>micromath::F32Ext::sqrt</code></strong>
+は <strong>高速近似</strong>（誤差あり）。検証は <code>libm</code>
+側で行うのが無難</td>
+</tr>
+<tr>
+<td>固定容量コンテナ</td>
+<td><strong><code>heapless</code></strong>（<code>Vec</code>,
+<code>Deque</code>, <code>BinaryHeap</code>, <code>IndexMap</code>
+等）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="main.rs-だけのサンプルcargo-なし">4.3 <code>main.rs</code>
+だけのサンプル（Cargo なし）</h2>
+<p><code>rust_rt_mailbox</code> は <strong><code>rustc</code>
+を直接</strong>呼び、<code>INtime.rs</code> を
+<code>#[path = "INtime.rs"]</code> で取り込む。依存ゼロなので CI
+や最小再現に向く。</p>
+<hr />
+<h1 id="代表的アルゴリズムとデータ構造fifoスタックヒープ">5.
+代表的アルゴリズムとデータ構造（FIFO・スタック・ヒープ）</h1>
+<h2 id="用語の整理">5.1 用語の整理</h2>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>構造</th>
+<th>特徴</th>
+<th>典型操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>スタック（LIFO）</strong></td>
+<td>後入れ先出し</td>
+<td><code>push</code> / <code>pop</code></td>
+</tr>
+<tr>
+<td><strong>キュー（FIFO）</strong></td>
+<td>先入れ先出し</td>
+<td><code>enqueue</code> / <code>dequeue</code>（<code>push_back</code>
+/ <code>pop_front</code> 等）</td>
+</tr>
+<tr>
+<td><strong>二分ヒープ（優先度付きキュー）</strong></td>
+<td>優先度最大（または最小）を高速に取得</td>
+<td><code>push</code> / <code>pop</code>（根が最優先）</td>
+</tr>
+<tr>
+<td><strong>連結リスト</strong></td>
+<td>挿入・削除の位置を保ちやすい（<code>std</code> の
+<code>LinkedList</code> は <code>no_std</code> では非利用）</td>
+<td>RTA では <strong>固定配列＋インデックス</strong> や
+<strong>heapless</strong> で代替することが多い</td>
+</tr>
+</tbody>
+</table>
+<h2 id="本リポジトリでの例">5.2 本リポジトリでの例</h2>
+<ul>
+<li><strong><code>heapless::binary_heap::BinaryHeap&lt;T, Max, N&gt;</code></strong><br />
+<strong>最大ヒープ</strong>。<code>pop</code>
+で大きい順に取り出す動きは、<strong>ヒープソート</strong>の「根を取り続ける」イメージに近い（<code>rtacc_algorithms</code>
+のデモ）。</li>
+<li><strong>FIFO / スタック</strong><br />
+同じく <strong><code>heapless::Deque</code></strong> や
+<strong><code>Vec</code></strong> で両端操作すれば
+<strong>キュー</strong>にも<strong>スタック</strong>にもできる。サンプルコードは別途追加可能だが、<strong>固定容量</strong>と
+<strong>オーバーフロー時の <code>Result</code></strong>
+に注意する。</li>
+</ul>
+<h2 id="数値まわり">5.3 数値まわり</h2>
+<ul>
+<li><strong><code>libm::sqrtf</code></strong>: <code>no_std</code>
+で一般的な <strong>平方根</strong>実装。</li>
+<li><strong><code>micromath</code></strong>: 三角関数や
+<strong><code>F32Ext::sqrt</code></strong> など
+<strong>組み込み向け近似</strong>。<code>sqrt</code>
+はビット操作ベースで
+<strong>誤差が大きい</strong>ため、<strong>厳密比較には使わない</strong>。</li>
+</ul>
+<hr />
+<h1 id="intime.rs-ラッパの解説">6. <code>INtime.rs</code>
+ラッパの解説</h1>
+<p><code>INtime.rs</code> は <strong><code>no_std</code></strong>
+のまま、INtime の RT API を
+<strong>安全に近い形</strong>で使うためのモジュールである。</p>
+<h2 id="ffiextern-c">6.1 FFI（<code>extern "C"</code>）</h2>
+<p><code>rt.h</code> に相当する宣言を
+<strong><code>mod ffi</code></strong>
+に集約する。主なグループは次のとおり。</p>
+<ul>
+<li><strong>メモリ</strong>: <code>AllocateRtMemory</code>,
+<code>FreeRtMemory</code>, <code>CreateRtMemoryHandle</code>,
+<code>DeleteRtMemoryHandle</code>, <code>MapRtSharedMemory</code></li>
+<li><strong>メールボックス</strong>: <code>CreateRtMailbox</code>,
+<code>DeleteRtMailbox</code>, <code>SendRtHandle</code>,
+<code>ReceiveRtHandle</code>, <code>GetRtHandleType</code></li>
+<li><strong>スレッド・待機</strong>: <code>CreateRtThread</code>,
+<code>RtSleep</code></li>
+<li><strong>デバッグ出力</strong>: <code>printf</code></li>
+</ul>
+<h2 id="rthandle">6.2 <code>RtHandle</code></h2>
+<p>SDK の <strong>RTHANDLE（<code>u16</code>）</strong>
+をラップ。<code>0xFFFF</code> は無効として <code>Option</code>
+で表現する。</p>
+<h2 id="rtbufferallocatertmemory-任意の-creatertmemoryhandle">6.3
+<code>RtBuffer</code>（<code>AllocateRtMemory</code> + 任意の
+<code>CreateRtMemoryHandle</code>）</h2>
+<ul>
+<li><strong><code>allocate</code> /
+<code>allocate_zeroed</code></strong>:
+バイトブロックを確保。ゼロ初期化が必要なら後者。</li>
+<li><strong><code>create_segment_handle</code></strong>:
+同一ブロックに対して
+<strong>複数回</strong>セグメントハンドルを作れる（上限
+<code>MAX_SEGMENT_HANDLES</code>）。</li>
+<li><strong><code>Drop</code></strong>: 登録した
+<strong>すべての</strong> <code>DeleteRtMemoryHandle</code> の後に
+<strong><code>FreeRtMemory</code></strong>（順序が SDK
+要件と整合）。</li>
+</ul>
+<h2 id="rtmappedsharedview">6.4 <code>RtMappedSharedView</code></h2>
+<p><code>MapRtSharedMemory</code> の結果。<strong><code>Drop</code> で
+<code>FreeRtMemory</code></strong>（マッピング解除）。</p>
+<h2 id="rtmailbox">6.5 <code>RtMailbox</code></h2>
+<p><code>CreateRtMailbox</code>。<strong><code>Drop</code> で
+<code>DeleteRtMailbox</code></strong>。</p>
+<h2 id="ヘルパ関数">6.6 ヘルパ関数</h2>
+<ul>
+<li><strong><code>zero_memory</code></strong>: 生ポインタ範囲を
+<code>fill(0)</code>。</li>
+<li><strong><code>create_rt_thread</code></strong>,
+<strong><code>send_rt_handle</code></strong>,
+<strong><code>receive_rt_handle</code></strong>,
+<strong><code>is_memory_handle</code></strong>,
+<strong><code>rt_sleep</code></strong></li>
+<li><strong><code>printf_cstr</code></strong>,
+<strong><code>printf_summary</code></strong>: フォーマット文字列は
+<strong>ヌル終端</strong>の <code>&amp;'static [u8]</code>。</li>
+</ul>
+<h2 id="サンプルとの対応">6.7 サンプルとの対応</h2>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr>
+<th>サンプル</th>
+<th><code>INtime.rs</code> の主な利用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main.rs</code>（メールボックス）</td>
+<td><code>RtBuffer</code>, <code>RtMailbox</code>, スレッド,
+<code>Send</code>/<code>Receive</code>, <code>printf_summary</code>
+等</td>
+</tr>
+<tr>
+<td><code>rtacc_algorithms</code></td>
+<td>検証ロジックでは主に <strong><code>printf_cstr</code></strong>（他
+API は未使用でもラッパを同梱可能）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="rta-のビルド方法rtacc">7. RTA
+のビルド方法（<code>rtacc</code>）</h1>
+<h2 id="llvmclang-lldの導入">7.1 LLVM（clang / lld）の導入</h2>
+<p><code>rtacc</code> の <strong><code>--toolset llvm</code></strong> は
+<strong>clang</strong>（<code>.ll</code> → <code>.asm</code> /
+<code>.obj</code>）と <strong>lld-link</strong>（<code>.rta</code>
+リンク）を呼ぶ。Windows では次のいずれかで <strong>LLVM の
+<code>bin</code></strong> を PATH に載せる（未設定時、<code>rtacc</code>
+は既定で <code>C:\Program Files\LLVM\bin</code> を探す。環境変数
+<strong><code>LLVM</code></strong> で上書き可）。</p>
+<h3 id="winget推奨">winget（推奨）</h3>
+<p>管理者不要のユーザースコープ例:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>winget install <span class="op">-</span>e <span class="op">--</span>id LLVM<span class="op">.</span><span class="fu">LLVM</span> <span class="op">--</span>scope user</span></code></pre></div>
+<p>システム全体に入れる場合:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>winget install <span class="op">-</span>e <span class="op">--</span>id LLVM<span class="op">.</span><span class="fu">LLVM</span></span></code></pre></div>
+<p>インストール後、<strong>新しいターミナル</strong>を開き、次で確認する。</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">where</span><span class="op">.</span><span class="fu">exe</span> clang</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>clang <span class="op">--</span>version</span></code></pre></div>
+<p><code>winget search LLVM</code>
+でバージョンや別パッケージを確認できる。パッケージ ID は環境により
+<strong><code>LLVM.LLVM</code></strong>
+が一般的（<code>winget show LLVM.LLVM</code> で説明を表示）。</p>
+<h3 id="その他の手法">その他の手法</h3>
+<table>
+<colgroup>
+<col style="width: 54%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>方法</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>公式インストーラ</strong></td>
+<td><a href="https://github.com/llvm/llvm-project/releases">LLVM
+releases</a> や <a href="https://llvm.org/">llvm.org</a> の Windows
+用。既定パスは多くの場合 <code>C:\Program Files\LLVM\bin</code>。</td>
+</tr>
+<tr>
+<td><strong>Chocolatey</strong></td>
+<td>管理者 PowerShell: <code>choco install llvm</code></td>
+</tr>
+<tr>
+<td><strong>Scoop</strong></td>
+<td><code>scoop install llvm</code>（ユーザーディレクトリ向け）</td>
+</tr>
+<tr>
+<td><strong>手動 PATH</strong></td>
+<td>LLVM の <code>bin</code> に <code>clang.exe</code> /
+<code>lld-link.exe</code>
+があることを確認し、<strong>システムまたはユーザー PATH</strong>
+に追加。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="トラブルシュートllvm">トラブルシュート（LLVM）</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>現象</th>
+<th>対処</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clang</code> が見つからない</td>
+<td>PATH を確認するか、<strong>ユーザー環境変数</strong>
+<code>LLVM</code> に <code>clang.exe</code>
+があるディレクトリを設定（例:
+<code>C:\Program Files\LLVM\bin</code>）。</td>
+</tr>
+<tr>
+<td><code>rtacc</code> が別の clang を掴む</td>
+<td>PATH の<strong>先頭</strong>に使いたい LLVM の <code>bin</code>
+を置く、または <code>LLVM</code> を明示。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="事前準備全体">7.2 事前準備（全体）</h2>
+<ul>
+<li><strong>LLVM / clang</strong>: 上記
+<strong>§7.1</strong>。<strong>clang</strong> と
+<strong>lld</strong>（<code>lld-link</code>）が揃っていること。</li>
+<li><strong>Rust（rustup）</strong>: サンプルは
+<strong><code>rustup</code> の <code>rustc</code> +
+<code>i686-pc-windows-msvc</code></strong> を前提とする。未導入なら <a
+href="https://rustup.rs/">rustup.rs</a> か <strong>winget</strong>:
+<code>winget install -e --id Rustlang.Rustup</code> → 新しいターミナルで
+<code>rustup target add i686-pc-windows-msvc</code>。PATH は
+<strong><code>%USERPROFILE%\.cargo\bin</code></strong>
+を優先（<code>docs/GO_SETUP.md</code> も参照）。</li>
+<li><strong>INtime SDK</strong>: リンカが
+<strong><code>clib.lib</code></strong>,
+<strong><code>rt.lib</code></strong> 等を参照できるように、通常は INtime
+のライブラリパスが通っていること（<code>rtacc</code> の出力ログに
+<code>LIBPATH</code> が出る）。</li>
+<li><strong><code>bin/rtacc.exe</code></strong>: リポジトリルートで
+<code>build.ps1</code> または
+<code>go build -o bin/rtacc.exe ./cmd/rtacc</code> で生成。</li>
+</ul>
+<h2 id="メールボックス例rustc-.ll">7.3
+メールボックス例（<code>rustc</code> → <code>.ll</code>）</h2>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> examples\rust</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>\build_ll<span class="op">.</span><span class="fu">ps1</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">&amp;</span> <span class="op">..</span>\<span class="op">..</span>\bin\rtacc<span class="op">.</span><span class="fu">exe</span> project<span class="op">.</span><span class="fu">json</span> <span class="op">--</span>toolset llvm</span></code></pre></div>
+<p>出力: <code>out/rust_rt_mailbox.ll</code> → 中間生成物 →
+<strong><code>out/app.rta</code></strong>（<code>project.json</code> の
+<code>sources</code> が参照する名前に合わせる）。</p>
+<h2 id="外部クレート例cargo-.ll">7.4 外部クレート例（Cargo →
+<code>.ll</code>）</h2>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> examples\rust\rtacc_algorithms</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>\build_ll<span class="op">.</span><span class="fu">ps1</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="op">&amp;</span> <span class="op">..</span>\<span class="op">..</span>\<span class="op">..</span>\bin\rtacc<span class="op">.</span><span class="fu">exe</span> project<span class="op">.</span><span class="fu">json</span> <span class="op">--</span>toolset llvm</span></code></pre></div>
+<p>出力: <strong><code>out/rust_rt_algorithms.ll</code></strong>,
+<strong><code>out/app.rta</code></strong>。</p>
+<h2 id="project.json-の要点">7.5 <code>project.json</code> の要点</h2>
+<ul>
+<li><strong><code>sources</code></strong>: コンパイルする
+<code>.ll</code>（または <code>.c</code> 等）。</li>
+<li><strong><code>output</code></strong>: 例として
+<code>app.rta</code>。</li>
+<li><strong><code>toolset</code></strong>: <code>llvm</code> または
+<code>vs2017</code>。</li>
+<li><strong><code>linker_flags</code></strong>:
+ヒープ／スタックサイズなど（サンプルに既定あり）。</li>
+</ul>
+<p>詳細はリポジトリの <strong><code>docs/RTACC_USAGE.md</code></strong>
+を参照。</p>
+<hr />
+<h1 id="トラブルシュートよくあること">8.
+トラブルシュート（よくあること）</h1>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 72%" />
+</colgroup>
+<thead>
+<tr>
+<th>現象</th>
+<th>対処のヒント</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>can't find crate for core</code>（i686）</td>
+<td><strong>rustup</strong> で <code>i686-pc-windows-msvc</code>
+を入れ、<strong>PATH で rustup の rustc を優先</strong></td>
+</tr>
+<tr>
+<td><code>micromath</code> の <code>sqrt</code>
+だけ値が大きくズレる</td>
+<td><strong>近似実装</strong>のため。厳密な検証は
+<strong><code>libm::sqrtf</code></strong> 等を使う</td>
+</tr>
+<tr>
+<td>リンクで <code>___guard_check_icall_fptr</code> 重複警告</td>
+<td>環境・SDK の組み合わせで出ることがある。<code>rtacc</code> が
+<strong>Done</strong> ならビルドは完了扱いのことが多い</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="参考リンク">9. 参考リンク</h1>
+<ul>
+<li>TenAsys INtime SDK ドキュメント（各 API 名で検索）</li>
+<li><a href="https://docs.rust-embedded.org/book/">The Rust Embedded
+Book</a>（<code>no_std</code> 全般）</li>
+<li><a href="https://docs.rs/heapless">heapless</a>, <a
+href="https://docs.rs/libm">libm</a>, <a
+href="https://docs.rs/micromath">micromath</a></li>
+<li>リポジトリ内: <code>docs/RTACC_USAGE.md</code>,
+<code>docs/GO_SETUP.md</code></li>
+</ul>
+<hr />
+<p><em>このファイルは <code>build_readme_pdf.ps1</code> から PDF または
+HTML に変換できる。</em></p>
+</body>
+</html>

@@ -104,29 +104,31 @@ struct Token {
 }
 
 fn is_ident_start(c: char) -> bool {
-    c.is_ascii_alphabetic() || c == '_'
+    // IEC 識別子は非 ASCII（例: 日本語変数名）もあり得る。ASCII のみだと UTF-8 先頭バイトを
+    // 1 バイトずつ `as char` して誤解釈するため、Unicode の字種で判定する。
+    c == '_' || c.is_alphabetic()
 }
 
 fn is_ident_char(c: char) -> bool {
     // IL の型付き即値や VAR 宣言で使われる `INT#Xxx` 形式、
     // フィールドアクセス `CTU_1.CU` などを扱うため、`#` や `.` も含める
-    c.is_ascii_alphanumeric() || c == '_' || c == '#' || c == '.'
+    c.is_alphanumeric() || c == '_' || c == '#' || c == '.'
 }
 
-/// ごく簡易な IL 用レキサ
+/// ごく簡易な IL 用レキサ（入力は UTF-8。コメント・識別子に非 ASCII を許可）
 fn lex(input: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
+    let idx: Vec<(usize, char)> = input.char_indices().collect();
     let mut i = 0;
-    let bytes = input.as_bytes();
 
-    while i < bytes.len() {
-        let c = bytes[i] as char;
+    while i < idx.len() {
+        let (pos, c) = idx[i];
 
-        // コメント (* ... *) をスキップ
-        if c == '(' && i + 1 < bytes.len() && bytes[i + 1] as char == '*' {
+        // コメント (* ... *) をスキップ（中身は UTF-8 安全に 1 文字ずつ進める）
+        if c == '(' && i + 1 < idx.len() && idx[i + 1].1 == '*' {
             i += 2;
-            while i + 1 < bytes.len() {
-                if bytes[i] as char == '*' && bytes[i + 1] as char == ')' {
+            while i + 1 < idx.len() {
+                if idx[i].1 == '*' && idx[i + 1].1 == ')' {
                     i += 2;
                     break;
                 }
@@ -141,7 +143,7 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
         if c == '\n' {
             tokens.push(Token {
                 kind: TokenKind::Newline,
-                pos: i,
+                pos,
             });
             i += 1;
             continue;
@@ -150,16 +152,16 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
             i += 1;
             continue;
         }
-        let pos = i;
 
         // 数値（とりあえず 10 進のみ）
         if c.is_ascii_digit() {
-            let start = i;
+            let start = pos;
             i += 1;
-            while i < bytes.len() && (bytes[i] as char).is_ascii_digit() {
+            while i < idx.len() && idx[i].1.is_ascii_digit() {
                 i += 1;
             }
-            let s = &input[start..i];
+            let end = if i < idx.len() { idx[i].0 } else { input.len() };
+            let s = &input[start..end];
             let v: i64 = s
                 .parse()
                 .map_err(|e| format!("整数リテラルのパースに失敗しました: {e}"))?;
@@ -172,12 +174,13 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
 
         // 英字開始トークン（命令/識別子/型）
         if is_ident_start(c) {
-            let start = i;
+            let start = pos;
             i += 1;
-            while i < bytes.len() && is_ident_char(bytes[i] as char) {
+            while i < idx.len() && is_ident_char(idx[i].1) {
                 i += 1;
             }
-            let ident = &input[start..i];
+            let end = if i < idx.len() { idx[i].0 } else { input.len() };
+            let ident = &input[start..end];
             let upper = ident.to_ascii_uppercase();
             let kind = match upper.as_str() {
                 "VAR" => TokenKind::Var,
@@ -203,7 +206,7 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
             continue;
         }
 
-        return Err(format!("未知の文字 '{}' (バイト位置 {pos})", c));
+        return Err(format!("未知の文字 '{c}' (バイト位置 {pos})"));
     }
 
     Ok(tokens)
@@ -490,9 +493,31 @@ impl Parser {
     }
 }
 
-/// LLVM IR の識別子では # や . が使えないので、_ に置換する
+/// LLVM IR の未引用識別子は `[a-zA-Z_$][a-zA-Z0-9_$]*` のみ。`#` / `.` を `_` にし、
+/// 非 ASCII（例: 日本語変数名）は `_u` + 16 進コードポイントにエスケープする。
 fn sanitize_llvm_name(name: &str) -> String {
-    name.replace('#', "_").replace('.', "_")
+    let mut out = String::new();
+    let s = name.replace('#', "_").replace('.', "_");
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() || c == '_' || c == '$' {
+            out.push(c);
+        } else {
+            out.push('_');
+            out.push('u');
+            out.push_str(&format!("{:x}", c as u32));
+        }
+    }
+    if out.is_empty() {
+        return "_empty".to_string();
+    }
+    if out
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_digit())
+    {
+        out.insert(0, '_');
+    }
+    out
 }
 
 /// `名前.Xn` 形式（最後の `.` の直後が `X`/`x` + 10 進桁）。PLCP の Bitfield（`.X0`〜`.X63`）に合わせる。
@@ -813,6 +838,16 @@ fn compile_il_to_llvm_ir(
                         }
                     }
                 }
+                if inst.starts_with("R_TRIG") || inst.starts_with("F_TRIG") {
+                    let prev = format!("{}._prev_clk", inst);
+                    if !declared.contains_key(&prev) {
+                        declared.insert(prev.clone(), VarType::Bool);
+                        vars.push(VarDecl {
+                            name: prev,
+                            ty: VarType::Bool,
+                        });
+                    }
+                }
             }
             Instr::Sel { cond, a, b, dst } => {
                 let mut add_if_needed = |name: &str, default_ty: VarType| {
@@ -875,7 +910,7 @@ fn compile_il_to_llvm_ir(
     let mut m = LlvmModule::new();
 
     m.emit(format!(
-        "; llil: IL -> LLVM IR (BOOL/BYTE/WORD/INT/UINT/DWORD/TIME, ADD/GT/GE, CTU/TP, .Xn) memory={}",
+        "; llil: IL -> LLVM IR (BOOL/BYTE/WORD/INT/UINT/DWORD/TIME, ADD/GT/GE, CTU/TP/TON/R_TRIG/F_TRIG, .Xn) memory={}",
         memory.as_cli_label()
     ));
     // clang が出す .ll と llvm-link するため datalayout / triple を揃える
@@ -889,6 +924,9 @@ fn compile_il_to_llvm_ir(
 
     emit_ctu_step(&mut m);
     emit_tp_step(&mut m);
+    emit_ton_step(&mut m);
+    emit_r_trig_step(&mut m);
+    emit_f_trig_step(&mut m);
 
     // 本体: POU 関数（例: define i32 @eqtest() { ... }）
     m.emit(format!("define i32 @{}() {{", pou_name));
@@ -1308,6 +1346,60 @@ fn emit_tp_step(m: &mut LlvmModule) {
     m.emit("}");
 }
 
+/// TON (On-delay timer) の 1 スキャン: IN=false なら ET=0・Q=false。IN=true なら ET を ms 単位で
+///（1 スキャンあたり 1ms とみなして）加算し、ET>=PT で Q=true。PT/ET は i32（TIME# のミリ秒）。
+fn emit_ton_step(m: &mut LlvmModule) {
+    m.emit("define void @ton_step(ptr %in, ptr %pt, ptr %et, ptr %q) {");
+    m.emit("entry:");
+    m.emit("  %in_val = load i1, ptr %in");
+    m.emit("  br i1 %in_val, label %ton_in_true, label %ton_in_false");
+    m.emit("");
+    m.emit("ton_in_false:");
+    m.emit("  store i32 0, ptr %et");
+    m.emit("  store i1 false, ptr %q");
+    m.emit("  ret void");
+    m.emit("");
+    m.emit("ton_in_true:");
+    m.emit("  %pt_val = load i32, ptr %pt");
+    m.emit("  %et_old = load i32, ptr %et");
+    m.emit("  %et_inc = add i32 %et_old, 1");
+    m.emit("  %below_pt = icmp slt i32 %et_inc, %pt_val");
+    m.emit("  %et_new = select i1 %below_pt, i32 %et_inc, i32 %pt_val");
+    m.emit("  store i32 %et_new, ptr %et");
+    m.emit("  %q_val = icmp sge i32 %et_new, %pt_val");
+    m.emit("  store i1 %q_val, ptr %q");
+    m.emit("  ret void");
+    m.emit("}");
+}
+
+/// R_TRIG: CLK の立ち上がり 1 スキャンのみ Q=true。内部 `_prev_clk` で前回 CLK を保持。
+fn emit_r_trig_step(m: &mut LlvmModule) {
+    m.emit("define void @r_trig_step(ptr %clk, ptr %q, ptr %prev_clk) {");
+    m.emit("entry:");
+    m.emit("  %clk_v = load i1, ptr %clk");
+    m.emit("  %prev_v = load i1, ptr %prev_clk");
+    m.emit("  %prev_not = xor i1 %prev_v, true");
+    m.emit("  %rise = and i1 %clk_v, %prev_not");
+    m.emit("  store i1 %rise, ptr %q");
+    m.emit("  store i1 %clk_v, ptr %prev_clk");
+    m.emit("  ret void");
+    m.emit("}");
+}
+
+/// F_TRIG: CLK の立下り 1 スキャンのみ Q=true。
+fn emit_f_trig_step(m: &mut LlvmModule) {
+    m.emit("define void @f_trig_step(ptr %clk, ptr %q, ptr %prev_clk) {");
+    m.emit("entry:");
+    m.emit("  %clk_v = load i1, ptr %clk");
+    m.emit("  %prev_v = load i1, ptr %prev_clk");
+    m.emit("  %clk_not = xor i1 %clk_v, true");
+    m.emit("  %fall = and i1 %clk_not, %prev_v");
+    m.emit("  store i1 %fall, ptr %q");
+    m.emit("  store i1 %clk_v, ptr %prev_clk");
+    m.emit("  ret void");
+    m.emit("}");
+}
+
 fn ptr_for_var(vars: &[VarDecl], name: &str) -> Option<String> {
     vars.iter()
         .find(|v| v.name == name)
@@ -1359,6 +1451,54 @@ fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result
         m.emit(format!(
             "  call void @tp_step(ptr {}, ptr {}, ptr {}, ptr {}, ptr {})",
             in_ptr, pt_ptr, q_ptr, elapsed_ptr, running_ptr
+        ));
+        return Ok(());
+    }
+
+    if base.starts_with("TON") {
+        let in_ = format!("{}.IN", base);
+        let pt = format!("{}.PT", base);
+        let et = format!("{}.ET", base);
+        let q = format!("{}.Q", base);
+
+        let in_ptr = ptr_for_var(vars, &in_).ok_or_else(|| format!("TON 入力 {} が見つかりません", in_))?;
+        let pt_ptr = ptr_for_var(vars, &pt).ok_or_else(|| format!("TON 入力 {} が見つかりません", pt))?;
+        let et_ptr = ptr_for_var(vars, &et).ok_or_else(|| format!("TON 入出力 {} が見つかりません", et))?;
+        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("TON 出力 {} が見つかりません", q))?;
+
+        m.emit(format!(
+            "  call void @ton_step(ptr {}, ptr {}, ptr {}, ptr {})",
+            in_ptr, pt_ptr, et_ptr, q_ptr
+        ));
+        return Ok(());
+    }
+
+    if base.starts_with("R_TRIG") {
+        let clk = format!("{}.CLK", base);
+        let q = format!("{}.Q", base);
+        let prev = format!("{}._prev_clk", base);
+        let clk_ptr = ptr_for_var(vars, &clk).ok_or_else(|| format!("R_TRIG 入力 {} が見つかりません", clk))?;
+        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("R_TRIG 出力 {} が見つかりません", q))?;
+        let prev_ptr =
+            ptr_for_var(vars, &prev).ok_or_else(|| format!("R_TRIG 内部 {} が見つかりません", prev))?;
+        m.emit(format!(
+            "  call void @r_trig_step(ptr {}, ptr {}, ptr {})",
+            clk_ptr, q_ptr, prev_ptr
+        ));
+        return Ok(());
+    }
+
+    if base.starts_with("F_TRIG") {
+        let clk = format!("{}.CLK", base);
+        let q = format!("{}.Q", base);
+        let prev = format!("{}._prev_clk", base);
+        let clk_ptr = ptr_for_var(vars, &clk).ok_or_else(|| format!("F_TRIG 入力 {} が見つかりません", clk))?;
+        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("F_TRIG 出力 {} が見つかりません", q))?;
+        let prev_ptr =
+            ptr_for_var(vars, &prev).ok_or_else(|| format!("F_TRIG 内部 {} が見つかりません", prev))?;
+        m.emit(format!(
+            "  call void @f_trig_step(ptr {}, ptr {}, ptr {})",
+            clk_ptr, q_ptr, prev_ptr
         ));
         return Ok(());
     }

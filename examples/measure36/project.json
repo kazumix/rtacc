@@ -3,11 +3,16 @@
     "llvm": {
       "compiler": "clang",
       "linker": "lld",
-      "compiler_flags": null,
+      "compiler_flags": [
+        "-Wno-visibility",
+        "-Wno-microsoft-anon-tag"
+      ],
       "linker_flags": [
         "/VERSION:21076.20053",
         "/HEAP:1048576,4096",
-        "/STACK:1048576,4096"
+        "/STACK:1048576,4096",
+        "/LIBPATH:$(RTEDGE)\\Library",
+        "/LIBPATH:$(RTEDGE)\\Library\\Rt"
       ]
     },
     "vs2017": {
@@ -21,7 +26,9 @@
         "/VERSION:21076.20053",
         "/HEAP:1048576,4096",
         "/STACK:1048576,4096",
-        "/NOLOGO"
+        "/NOLOGO",
+        "/LIBPATH:$(RTEDGE)\\Library",
+        "/LIBPATH:$(RTEDGE)\\Library\\Rt"
       ]
     }
   },
@@ -29,18 +36,31 @@
     {
       "name": "default",
       "toolset": "llvm",
-      "output_dir": "",
-      "output": "app.rta",
+      "output_dir": "out",
+      "output": "main.rta",
       "optimize": "2",
-      "compile_only": true,
-      "includes": null,
-      "sources": [
-        "measure36.il",
-        "-c"
+      "compile_only": false,
+      "il_memory": "rtedge",
+      "includes": [
+        ".",
+        "$(RTEDGE)\\Library"
       ],
-      "libs": null,
-      "defines": null,
+      "sources": [
+        "main.c",
+        "rtedge_tags.c",
+        "il_rtedge_slots_bind.c",
+        "../IL/il_rtedge_egapi.c",
+        "measure36.IL"
+      ],
+      "libs": [
+        "eghgapi.lib"
+      ],
+      "defines": [
+        "IL_USE_PLCP_RTEDGE",
+        "IL_USE_EGAPI"
+      ],
       "flags": null
     }
   ]
 }
+

@@ -88,6 +88,10 @@ enum TokenKind {
     Andn,     // ANDN
     Or,       // OR
     St,       // ST
+    Stn,      // STN（否定ストア）
+    Orn,      // ORN（否定 OR）
+    Set,      // S（セット）
+    Reset,    // R（リセット）
     Add,      // ADD
     Gt,       // GT
     Ge,       // GE
@@ -190,6 +194,10 @@ fn lex(input: &str) -> Result<Vec<Token>, String> {
                 "ANDN" => TokenKind::Andn,
                 "OR" => TokenKind::Or,
                 "ST" => TokenKind::St,
+                "STN" => TokenKind::Stn,
+                "ORN" => TokenKind::Orn,
+                "S" => TokenKind::Set,
+                "R" => TokenKind::Reset,
                 "ADD" => TokenKind::Add,
                 "GT" => TokenKind::Gt,
                 "GE" => TokenKind::Ge,
@@ -236,7 +244,11 @@ enum Instr {
     And(String),
     Andn(String),
     Or(String),
+    Orn(String), // ORN: acc | !op
     St(String),
+    Stn(String), // STN: !acc をストア（BOOL / ビット）
+    Set(String), // S: オペランドを TRUE（BOOL / ビット 1）
+    Reset(String), // R: オペランドを FALSE（BOOL / ビット 0）
     Add(String),  // ADD の右辺（即値または変数）
     Gt(String),   // GT の右辺
     Ge(String),   // GE の右辺
@@ -305,7 +317,11 @@ impl Parser {
                 | TokenKind::And
                 | TokenKind::Andn
                 | TokenKind::Or
+                | TokenKind::Orn
                 | TokenKind::St
+                | TokenKind::Stn
+                | TokenKind::Set
+                | TokenKind::Reset
                 | TokenKind::Add
                 | TokenKind::Gt
                 | TokenKind::Ge
@@ -427,7 +443,11 @@ impl Parser {
             TokenKind::And => "AND",
             TokenKind::Andn => "ANDN",
             TokenKind::Or => "OR",
+            TokenKind::Orn => "ORN",
             TokenKind::St => "ST",
+            TokenKind::Stn => "STN",
+            TokenKind::Set => "S",
+            TokenKind::Reset => "R",
             TokenKind::Add => "ADD",
             TokenKind::Gt => "GT",
             TokenKind::Ge => "GE",
@@ -462,7 +482,11 @@ impl Parser {
             "AND" => Instr::And(name),
             "ANDN" => Instr::Andn(name),
             "OR" => Instr::Or(name),
+            "ORN" => Instr::Orn(name),
             "ST" => Instr::St(name),
+            "STN" => Instr::Stn(name),
+            "S" => Instr::Set(name),
+            "R" => Instr::Reset(name),
             "ADD" => Instr::Add(name),
             "GT" => Instr::Gt(name),
             "GE" => Instr::Ge(name),
@@ -608,7 +632,7 @@ fn is_int_literal(operand: &str) -> bool {
     parse_int_literal(operand).is_some()
 }
 
-/// TIME#1s など TIME 即値。返す値はミリ秒（1s → 1000）。
+/// TIME#1s など TIME 即値。返す値はミリ秒（1s → 1000、1m → 60000）。
 fn parse_time_literal(operand: &str) -> Option<u32> {
     let s = operand.trim();
     let (prefix, rest) = s.split_once('#')?;
@@ -620,9 +644,22 @@ fn parse_time_literal(operand: &str) -> Option<u32> {
         let n: u32 = rest_upper.trim_end_matches("MS").trim().parse().ok()?;
         return Some(n);
     }
+    // 長い接尾辞を先に（MS は上で処理済み）
+    if rest_upper.ends_with('D') {
+        let n: u32 = rest_upper.trim_end_matches('D').trim().parse().ok()?;
+        return Some(n.saturating_mul(86_400_000));
+    }
+    if rest_upper.ends_with('H') {
+        let n: u32 = rest_upper.trim_end_matches('H').trim().parse().ok()?;
+        return Some(n.saturating_mul(3_600_000));
+    }
+    if rest_upper.ends_with('M') {
+        let n: u32 = rest_upper.trim_end_matches('M').trim().parse().ok()?;
+        return Some(n.saturating_mul(60_000));
+    }
     if rest_upper.ends_with('S') {
         let n: u32 = rest_upper.trim_end_matches('S').trim().parse().ok()?;
-        return Some(n * 1000);
+        return Some(n.saturating_mul(1000));
     }
     rest.parse::<u32>().ok()
 }
@@ -650,11 +687,11 @@ impl LlvmModule {
     }
 }
 
-/// メンバ名から型を推測（.PV, .CV, .PT → Int/Time、.Q, .IN, .CU, .RESET → Bool）
+/// メンバ名から型を推測（.PV, .CV → Int、.PT / .ET → Time、.Q, .IN, .CU, .RESET → Bool）
 fn infer_type_from_member(name: &str) -> VarType {
     if name.contains(".PV") || name.contains(".CV") {
         VarType::Int
-    } else if name.contains(".PT") {
+    } else if name.contains(".PT") || name.contains(".ET") {
         VarType::Time
     } else {
         VarType::Bool
@@ -703,10 +740,10 @@ fn infer_var_types(prog: &IlProgram) -> HashMap<String, VarType> {
             Instr::Gt(_) | Instr::Ge(_) | Instr::Eq(_) => {
                 acc_type = Some(VarType::Bool);
             }
-            Instr::And(_) | Instr::Andn(_) | Instr::Or(_) => {
+            Instr::And(_) | Instr::Andn(_) | Instr::Or(_) | Instr::Orn(_) => {
                 acc_type = Some(VarType::Bool);
             }
-            Instr::St(name) => {
+            Instr::St(name) | Instr::Stn(name) => {
                 if parse_bit_suffix(name).is_some() {
                     let base = operand_base(name).to_string();
                     var_types.entry(base).or_insert(VarType::Dword);
@@ -714,6 +751,14 @@ fn infer_var_types(prog: &IlProgram) -> HashMap<String, VarType> {
                 }
                 if let Some(aty) = acc_type {
                     var_types.insert(name.clone(), aty);
+                }
+            }
+            Instr::Set(name) | Instr::Reset(name) => {
+                if parse_bit_suffix(name).is_some() {
+                    let base = operand_base(name).to_string();
+                    var_types.entry(base).or_insert(VarType::Dword);
+                } else {
+                    var_types.entry(name.clone()).or_insert(VarType::Bool);
                 }
             }
             Instr::Cal(_) => {}
@@ -876,7 +921,11 @@ fn compile_il_to_llvm_ir(
             | Instr::And(n)
             | Instr::Andn(n)
             | Instr::Or(n)
+            | Instr::Orn(n)
             | Instr::St(n)
+            | Instr::Stn(n)
+            | Instr::Set(n)
+            | Instr::Reset(n)
             | Instr::Add(n)
             | Instr::Gt(n)
             | Instr::Ge(n)
@@ -910,7 +959,7 @@ fn compile_il_to_llvm_ir(
     let mut m = LlvmModule::new();
 
     m.emit(format!(
-        "; llil: IL -> LLVM IR (BOOL/BYTE/WORD/INT/UINT/DWORD/TIME, ADD/GT/GE, CTU/TP/TON/R_TRIG/F_TRIG, .Xn) memory={}",
+        "; llil: IL -> LLVM IR (LD/LDN/AND/ANDN/OR/ORN/ST/STN/S/R, ADD/GT/GE, CTU/TP/TON/R_TRIG/F_TRIG, .Xn) memory={}",
         memory.as_cli_label()
     ));
     // clang が出す .ll と llvm-link するため datalayout / triple を揃える
@@ -1048,7 +1097,7 @@ fn compile_il_to_llvm_ir(
                 };
                 m.emit(format!("  store i1 {val}, ptr %acc"));
             }
-            Instr::And(name) | Instr::Andn(name) | Instr::Or(name) => {
+            Instr::And(name) | Instr::Andn(name) | Instr::Or(name) | Instr::Orn(name) => {
                 let cur = fresh_tmp();
                 m.emit(format!("  {cur} = load i1, ptr %acc"));
 
@@ -1076,7 +1125,7 @@ fn compile_il_to_llvm_ir(
                     let ty = lookup_var(&vars, name)?;
                     if !matches!(ty, VarType::Bool) {
                         return Err(format!(
-                            "AND/ANDN/OR は BOOL 変数またはビット指定（.Xn）のみ対応: {}",
+                            "AND/ANDN/OR/ORN は BOOL 変数またはビット指定（.Xn）のみ対応: {}",
                             name
                         ));
                     }
@@ -1086,7 +1135,7 @@ fn compile_il_to_llvm_ir(
                     s
                 };
                 let rhs = match instr {
-                    Instr::Andn(_) => {
+                    Instr::Andn(_) | Instr::Orn(_) => {
                         let not_tmp = fresh_tmp();
                         m.emit(format!("  {not_tmp} = xor i1 {src}, true"));
                         not_tmp
@@ -1096,7 +1145,7 @@ fn compile_il_to_llvm_ir(
 
                 let op = match instr {
                     Instr::And(_) | Instr::Andn(_) => "and",
-                    Instr::Or(_) => "or",
+                    Instr::Or(_) | Instr::Orn(_) => "or",
                     _ => unreachable!(),
                 };
                 let res = fresh_tmp();
@@ -1224,12 +1273,13 @@ fn compile_il_to_llvm_ir(
             Instr::Cal(inst_name) => {
                 emit_fb_call(&mut m, inst_name, &vars)?;
             }
-            Instr::St(name) => {
+            Instr::St(name) | Instr::Stn(name) => {
+                let negate_acc = matches!(instr, Instr::Stn(_));
                 let ty = lookup_var(&vars, name)?;
                 if let Some((_, bit)) = parse_bit_suffix(name) {
                     if !supports_bit_access(ty) {
                         return Err(format!(
-                            "ST のビット先は BYTE/WORD/INT/UINT/DWORD/TIME である必要があります: {}",
+                            "ST/STN のビット先は BYTE/WORD/INT/UINT/DWORD/TIME である必要があります: {}",
                             name
                         ));
                     }
@@ -1238,6 +1288,13 @@ fn compile_il_to_llvm_ir(
                     let elt = llvm_elem_ty(ty).unwrap();
                     let cur = fresh_tmp();
                     m.emit(format!("  {cur} = load i1, ptr %acc"));
+                    let cur = if negate_acc {
+                        let n = fresh_tmp();
+                        m.emit(format!("  {n} = xor i1 {cur}, true"));
+                        n
+                    } else {
+                        cur
+                    };
                     let old = fresh_tmp();
                     m.emit(format!("  {old} = load {elt}, ptr %ptr_{ir_base}"));
                     let one = fresh_tmp();
@@ -1266,28 +1323,93 @@ fn compile_il_to_llvm_ir(
                     VarType::Bool => {
                         let cur = fresh_tmp();
                         m.emit(format!("  {cur} = load i1, ptr %acc"));
+                        let cur = if negate_acc {
+                            let n = fresh_tmp();
+                            m.emit(format!("  {n} = xor i1 {cur}, true"));
+                            n
+                        } else {
+                            cur
+                        };
                         m.emit(format!("  store i1 {cur}, ptr %ptr_{ir_name}"));
                     }
-                    VarType::Byte => {
-                        let cur = fresh_tmp();
-                        m.emit(format!("  {cur} = load i32, ptr %int_acc"));
-                        let tr = fresh_tmp();
-                        m.emit(format!("  {tr} = trunc i32 {cur} to i8"));
-                        m.emit(format!("  store i8 {tr}, ptr %ptr_{ir_name}"));
-                    }
-                    VarType::Word => {
-                        let cur = fresh_tmp();
-                        m.emit(format!("  {cur} = load i32, ptr %int_acc"));
-                        let tr = fresh_tmp();
-                        m.emit(format!("  {tr} = trunc i32 {cur} to i16"));
-                        m.emit(format!("  store i16 {tr}, ptr %ptr_{ir_name}"));
-                    }
-                    VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
-                        let cur = fresh_tmp();
-                        m.emit(format!("  {cur} = load i32, ptr %int_acc"));
-                        m.emit(format!("  store i32 {cur}, ptr %ptr_{ir_name}"));
+                    VarType::Byte | VarType::Word | VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
+                        if negate_acc {
+                            return Err(format!(
+                                "STN は BOOL またはビット指定先のみ対応です: {}",
+                                name
+                            ));
+                        }
+                        match ty {
+                            VarType::Byte => {
+                                let cur = fresh_tmp();
+                                m.emit(format!("  {cur} = load i32, ptr %int_acc"));
+                                let tr = fresh_tmp();
+                                m.emit(format!("  {tr} = trunc i32 {cur} to i8"));
+                                m.emit(format!("  store i8 {tr}, ptr %ptr_{ir_name}"));
+                            }
+                            VarType::Word => {
+                                let cur = fresh_tmp();
+                                m.emit(format!("  {cur} = load i32, ptr %int_acc"));
+                                let tr = fresh_tmp();
+                                m.emit(format!("  {tr} = trunc i32 {cur} to i16"));
+                                m.emit(format!("  store i16 {tr}, ptr %ptr_{ir_name}"));
+                            }
+                            VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
+                                let cur = fresh_tmp();
+                                m.emit(format!("  {cur} = load i32, ptr %int_acc"));
+                                m.emit(format!("  store i32 {cur}, ptr %ptr_{ir_name}"));
+                            }
+                            _ => unreachable!(),
+                        }
                     }
                 }
+            }
+            Instr::Set(name) | Instr::Reset(name) => {
+                let set_true = matches!(instr, Instr::Set(_));
+                let ty = lookup_var(&vars, name)?;
+                if let Some((_, bit)) = parse_bit_suffix(name) {
+                    if !supports_bit_access(ty) {
+                        return Err(format!(
+                            "S/R のビット先は BYTE/WORD/INT/UINT/DWORD/TIME である必要があります: {}",
+                            name
+                        ));
+                    }
+                    validate_bit_index(ty, bit, name)?;
+                    let ir_base = sanitize_llvm_name(operand_base(name));
+                    let elt = llvm_elem_ty(ty).unwrap();
+                    let old = fresh_tmp();
+                    m.emit(format!("  {old} = load {elt}, ptr %ptr_{ir_base}"));
+                    let one = fresh_tmp();
+                    m.emit(format!("  {one} = shl {elt} 1, {bit}"));
+                    let not_mask = fresh_tmp();
+                    let all_ones = match elt {
+                        "i8" => "255",
+                        "i16" => "65535",
+                        "i32" => "-1",
+                        _ => unreachable!(),
+                    };
+                    m.emit(format!("  {not_mask} = xor {elt} {one}, {all_ones}"));
+                    let cleared = fresh_tmp();
+                    m.emit(format!("  {cleared} = and {elt} {old}, {not_mask}"));
+                    if set_true {
+                        let ext = fresh_tmp();
+                        m.emit(format!("  {ext} = zext i1 true to {elt}"));
+                        let shl = fresh_tmp();
+                        m.emit(format!("  {shl} = shl {elt} {ext}, {bit}"));
+                        let newv = fresh_tmp();
+                        m.emit(format!("  {newv} = or {elt} {cleared}, {shl}"));
+                        m.emit(format!("  store {elt} {newv}, ptr %ptr_{ir_base}"));
+                    } else {
+                        m.emit(format!("  store {elt} {cleared}, ptr %ptr_{ir_base}"));
+                    }
+                    continue;
+                }
+                if !matches!(ty, VarType::Bool) {
+                    return Err(format!("S/R のオペランドは BOOL またはビット指定である必要があります: {}", name));
+                }
+                let ir_name = sanitize_llvm_name(name);
+                let v = if set_true { "true" } else { "false" };
+                m.emit(format!("  store i1 {v}, ptr %ptr_{ir_name}"));
             }
         }
     }
@@ -1561,7 +1683,11 @@ fn validate_bit_operands_in_program(vars: &[VarDecl], prog: &IlProgram) -> Resul
             | Instr::And(n)
             | Instr::Andn(n)
             | Instr::Or(n)
-            | Instr::St(n) => {
+            | Instr::Orn(n)
+            | Instr::St(n)
+            | Instr::Stn(n)
+            | Instr::Set(n)
+            | Instr::Reset(n) => {
                 if is_int_literal(n) || is_time_literal(n) {
                     continue;
                 }

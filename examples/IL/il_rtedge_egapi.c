@@ -55,7 +55,8 @@ static const struct IlKeywordMatch il_kw[] = {
 	{"BOOL#", D_BOOL, 1, 1},
 	{"INT#", D_INT, 4, 2},
 	{"UINT#", D_UINT, 5, 2},
-	{"DWORD#", D_DWORD, 4, 4},
+	/* edgetype: EgVtUInt32 (=7)。4 は EgVtInt16 で INT# と同じになり誤る（PLCP type.c と一致） */
+	{"DWORD#", D_DWORD, 7, 4},
 	{"TIME#", D_TIME, 7, 4},
 	{"FUNCTION#", D_FUNCTION, IL_EGVT_SEGMENT, -1},
 	{"STRING#", D_STRING, IL_EGVT_SEGMENT, 83},

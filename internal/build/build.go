@@ -264,6 +264,23 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 	var objFiles []string
 	var llPaths []string // -combine-ir（方式B）用に .ll を集める
 
+	shouldUseRtedgeMemoryDefault := func(defines []string) bool {
+		// EgApi 経路のときは、slots_init / glue 側の生成が rtedge 前提になるため、
+		// project.json の il_memory を省略しても自動で --memory=rtedge を付ける。
+		has := func(k string) bool {
+			for _, d := range defines {
+				if strings.TrimSpace(d) == k {
+					return true
+				}
+			}
+			return false
+		}
+		if has("IL_USE_ETAG_RTEDGE") {
+			return true
+		}
+		return has("IL_USE_PLCP_RTEDGE") && has("IL_USE_EGAPI")
+	}
+
 	for _, src := range t.Sources {
 		ext := strings.ToLower(filepath.Ext(src))
 		switch ext {
@@ -411,6 +428,8 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			args0 := []string{pathSrc, "-o", llPath}
 			if mem := strings.TrimSpace(t.IlMemory); mem != "" {
 				args0 = append(args0, "--memory="+mem)
+			} else if shouldUseRtedgeMemoryDefault(t.Defines) {
+				args0 = append(args0, "--memory=rtedge")
 			}
 			if err := run(llilExe, args0, "IL→LL"); err != nil {
 				return err

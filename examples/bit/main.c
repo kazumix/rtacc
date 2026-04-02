@@ -1,4 +1,4 @@
-#include "rtedge_tags.h"
+#include "il_rtedge_app.h"
 
 #ifdef __INTIME__
 #include <rt.h>

@@ -33,10 +33,11 @@
         "main.c",
         "scan_thread.c",
         "scan.il",
-        "rtedge_tags.c",
+        "out/scan_rtedge_glue.c",
+        "../IL/il_rtedge_registry_core.c",
+        "../IL/il_rtedge_slot_bind_egapi.c",
         "../IL/plcp_rtedge_bridge.c",
-        "../IL/il_rtedge_egapi.c",
-        "il_rtedge_slots_bind.c"
+        "../IL/il_rtedge_egapi.c"
       ],
       "il_memory": "rtedge",
       "libs": [

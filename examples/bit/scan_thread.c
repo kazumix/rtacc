@@ -1,7 +1,7 @@
 /*
  * 100ms 周期で scan()（scan.il）を実行。ロジックは IL 側。
  */
-#include "rtedge_tags.h"
+#include "il_rtedge_app.h"
 
 #ifdef __INTIME__
 #include <rt.h>

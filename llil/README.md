@@ -96,6 +96,8 @@ cargo build --release
 .\target\release\llil.exe input.il -o output.ll --memory=rtedge
 ```
 
+`--memory=rtedge` かつ `-o foo.ll` のとき、同じディレクトリに **`foo_rtedge_glue.c`** も出力します（`IlRtedgeTags_Init` / `IlRtedgeSlots_BindEgEntry` と `@il_slot_*` の Eg Entry バインド表。VAR 由来のスロットは IL から自動生成）。
+
 生成した `output.ll` は `clang` で `.asm` / `.obj` にできます（`rtacc` のプロジェクトや `examples/ex` などを参照）。
 
 ```bash

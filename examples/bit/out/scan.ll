@@ -1,15 +1,34 @@
-; llil: IL -> LLVM IR (BOOL/INT/UINT/DWORD/TIME, ADD/GT/GE, CTU/TP, .Xn) memory=rtedge
+; llil: IL -> LLVM IR (LD/LDN/AND/ANDN/OR/ORN/ST/STN/S/R, ADD/GT/GE, CTU/TP/TON/R_TRIG/F_TRIG, .Xn) memory=rtedge
 target datalayout = "e-m:x-p:32:32-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32-a:0:32-S32"
 target triple = "i386-pc-windows-msvc"
+declare i8 @Rtedge_TagCreateByInstruction(ptr, i8)
+declare void @il_rtedge_registry_clear()
+declare void @il_rtedge_registry_record_binding(ptr, ptr)
+declare void @IlRtedge_BindTonPinSlot(ptr, ptr, i32)
 @il_mem_dw1 = global i32 0, align 4
 @il_slot_dw1 = global ptr null, align 4
 @il_mem_dw2 = global i32 0, align 4
 @il_slot_dw2 = global ptr null, align 4
 @il_mem_dw3 = global i32 0, align 4
 @il_slot_dw3 = global ptr null, align 4
+@il_spec_dw1 = private unnamed_addr constant [10 x i8] c"DWORD#dw1\00"
+@il_spec_dw2 = private unnamed_addr constant [10 x i8] c"DWORD#dw2\00"
+@il_spec_dw3 = private unnamed_addr constant [10 x i8] c"DWORD#dw3\00"
 define void @scan_slots_init() {
 entry:
-  ; rtedge: 将来はタグ解決。当面は stack と同じく @il_mem_* を指して動作させる。
+  call void @il_rtedge_registry_clear()
+  ; rtedge: FUNCTION セグメント → FB ピンは Eg Entry+offset → il_slot（IlRtedge_BindTonPinSlot）→ スカラータグ
+  ; FB: PLCP Structure_CreateCatalog 相当 — EgTagGetProperty(inst,Entry)→pSegment + offset
+  %spec_dw1 = getelementptr inbounds [10 x i8], ptr @il_spec_dw1, i32 0, i32 0
+  call i8 @Rtedge_TagCreateByInstruction(ptr %spec_dw1, i8 0)
+  call void @il_rtedge_registry_record_binding(ptr %spec_dw1, ptr @il_slot_dw1)
+  %spec_dw2 = getelementptr inbounds [10 x i8], ptr @il_spec_dw2, i32 0, i32 0
+  call i8 @Rtedge_TagCreateByInstruction(ptr %spec_dw2, i8 0)
+  call void @il_rtedge_registry_record_binding(ptr %spec_dw2, ptr @il_slot_dw2)
+  %spec_dw3 = getelementptr inbounds [10 x i8], ptr @il_spec_dw3, i32 0, i32 0
+  call i8 @Rtedge_TagCreateByInstruction(ptr %spec_dw3, i8 0)
+  call void @il_rtedge_registry_record_binding(ptr %spec_dw3, ptr @il_slot_dw3)
+  ; フォールバック: Entry バインド前は il_mem を指す（FB ピンは上で Entry+offset 済み）。
   store ptr @il_mem_dw1, ptr @il_slot_dw1
   store ptr @il_mem_dw2, ptr @il_slot_dw2
   store ptr @il_mem_dw3, ptr @il_slot_dw3
@@ -54,35 +73,90 @@ entry:
   store i1 %in_val, ptr %running
   ret void
 }
+define void @ton_step(ptr %in, ptr %pt, ptr %et, ptr %q, ptr %prev_in) {
+entry:
+  %iv = load i1, ptr %in
+  br i1 %iv, label %ton_in_on, label %ton_in_off
+
+ton_in_off:
+  store i32 0, ptr %et
+  store i1 false, ptr %q
+  store i1 false, ptr %prev_in
+  ret void
+
+ton_in_on:
+  %pv = load i1, ptr %prev_in
+  %pv_n = xor i1 %pv, true
+  %rise = and i1 %iv, %pv_n
+  br i1 %rise, label %ton_rise, label %ton_hold
+
+ton_rise:
+  store i32 0, ptr %et
+  store i1 false, ptr %q
+  store i1 true, ptr %prev_in
+  ret void
+
+ton_hold:
+  %pt_val = load i32, ptr %pt
+  %et_old = load i32, ptr %et
+  %et_inc = add i32 %et_old, 1
+  %below_pt = icmp slt i32 %et_inc, %pt_val
+  %et_new = select i1 %below_pt, i32 %et_inc, i32 %pt_val
+  store i32 %et_new, ptr %et
+  %q_val = icmp sge i32 %et_new, %pt_val
+  store i1 %q_val, ptr %q
+  store i1 true, ptr %prev_in
+  ret void
+}
+define void @r_trig_step(ptr %clk, ptr %q, ptr %prev_clk) {
+entry:
+  %clk_v = load i1, ptr %clk
+  %prev_v = load i1, ptr %prev_clk
+  %prev_not = xor i1 %prev_v, true
+  %rise = and i1 %clk_v, %prev_not
+  store i1 %rise, ptr %q
+  store i1 %clk_v, ptr %prev_clk
+  ret void
+}
+define void @f_trig_step(ptr %clk, ptr %q, ptr %prev_clk) {
+entry:
+  %clk_v = load i1, ptr %clk
+  %prev_v = load i1, ptr %prev_clk
+  %clk_not = xor i1 %clk_v, true
+  %fall = and i1 %clk_not, %prev_v
+  store i1 %fall, ptr %q
+  store i1 %clk_v, ptr %prev_clk
+  ret void
+}
 define i32 @scan() {
 entry:
-  %ptr_dw1 = load ptr, ptr @il_slot_dw1
-  %ptr_dw2 = load ptr, ptr @il_slot_dw2
-  %ptr_dw3 = load ptr, ptr @il_slot_dw3
   %acc = alloca i1
   store i1 false, ptr %acc
   %int_acc = alloca i32
   store i32 0, ptr %int_acc
-  %t1 = load i32, ptr %ptr_dw1
-  %t2 = lshr i32 %t1, 1
-  %t3 = and i32 %t2, 1
-  %t4 = icmp ne i32 %t3, 0
-  store i1 %t4, ptr %acc
-  %t5 = load i1, ptr %acc
-  %t6 = load i32, ptr %ptr_dw2
-  %t7 = lshr i32 %t6, 1
-  %t8 = and i32 %t7, 1
-  %t9 = icmp ne i32 %t8, 0
-  %t10 = and i1 %t5, %t9
-  store i1 %t10, ptr %acc
-  %t11 = load i1, ptr %acc
-  %t12 = load i32, ptr %ptr_dw3
-  %t13 = shl i32 1, 8
-  %t14 = xor i32 %t13, -1
-  %t15 = and i32 %t12, %t14
-  %t16 = zext i1 %t11 to i32
-  %t17 = shl i32 %t16, 8
-  %t18 = or i32 %t15, %t17
-  store i32 %t18, ptr %ptr_dw3
+  %t2 = load ptr, ptr @il_slot_dw1
+  %t1 = load i32, ptr %t2
+  %t3 = lshr i32 %t1, 1
+  %t4 = and i32 %t3, 1
+  %t5 = icmp ne i32 %t4, 0
+  store i1 %t5, ptr %acc
+  %t6 = load i1, ptr %acc
+  %t8 = load ptr, ptr @il_slot_dw2
+  %t7 = load i32, ptr %t8
+  %t9 = lshr i32 %t7, 1
+  %t10 = and i32 %t9, 1
+  %t11 = icmp ne i32 %t10, 0
+  %t12 = and i1 %t6, %t11
+  store i1 %t12, ptr %acc
+  %t13 = load ptr, ptr @il_slot_dw3
+  %t14 = load i1, ptr %acc
+  %t15 = load i32, ptr %t13
+  %t16 = shl i32 1, 8
+  %t17 = xor i32 %t16, -1
+  %t18 = and i32 %t15, %t17
+  %t19 = zext i1 %t14 to i32
+  %t20 = shl i32 %t19, 8
+  %t21 = or i32 %t18, %t20
+  store i32 %t21, ptr %t13
   ret i32 0
 }

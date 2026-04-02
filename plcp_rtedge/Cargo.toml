@@ -1,0 +1,11 @@
+[package]
+name = "plcp_rtedge"
+version = "0.1.0"
+edition = "2021"
+description = "PLCP の Functionblock_Register / Structure_CreateCatalog に相当する FB ピン配置とリンケージ（C ランタイムから FFI）"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+libc = "0.2"

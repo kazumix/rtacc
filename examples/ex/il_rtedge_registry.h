@@ -3,4 +3,8 @@
 
 unsigned char il_rtedge_registry_push(char *string, unsigned char hidden);
 
+void il_rtedge_registry_clear(void);
+void il_rtedge_registry_record_binding(const char *spec, void **slot_pp);
+void IlRtedgeRegistry_BindAllSlots(void);
+
 #endif

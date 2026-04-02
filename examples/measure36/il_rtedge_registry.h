@@ -6,5 +6,10 @@
  */
 unsigned char il_rtedge_registry_push(char *string, unsigned char hidden);
 
+/* llil slots_init 用（本サンプルは静的 bind のみ。実装は rtedge_tags.c 末尾の no-op） */
+void il_rtedge_registry_clear(void);
+void il_rtedge_registry_record_binding(const char *spec, void **slot_pp);
+void IlRtedgeRegistry_BindAllSlots(void);
+
 #endif
 

@@ -48,6 +48,7 @@
       "sources": [
         "main.c",
         "rtedge_tags.c",
+        "plcp_rtedge_bridge.c",
         "il_rtedge_egapi.c",
         "il_rtedge_slots_bind.c",
         "test.il"

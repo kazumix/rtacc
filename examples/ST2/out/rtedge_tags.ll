@@ -216,6 +216,27 @@ define internal fastcc void @st2_rtedge_invoke_slots_init() unnamed_addr #5 {
 
 declare dso_local void @IlRtedgeSlots_BindEgEntry() local_unnamed_addr #6
 
+; Function Attrs: noinline nounwind optnone
+define dso_local void @il_rtedge_registry_clear() local_unnamed_addr #4 {
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone
+define dso_local void @il_rtedge_registry_record_binding(ptr noundef %0, ptr noundef %1) local_unnamed_addr #4 {
+  %3 = alloca ptr, align 4
+  %4 = alloca ptr, align 4
+  store ptr %1, ptr %3, align 4
+  store ptr %0, ptr %4, align 4
+  %5 = load ptr, ptr %4, align 4
+  %6 = load ptr, ptr %3, align 4
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone
+define dso_local void @IlRtedgeRegistry_BindAllSlots() local_unnamed_addr #4 {
+  ret void
+}
+
 declare dso_local zeroext i8 @Rtedge_TagCreateByInstruction(ptr noundef, i8 noundef zeroext) local_unnamed_addr #6
 
 declare dso_local void @LED2Check_slots_init() local_unnamed_addr #6

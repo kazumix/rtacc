@@ -1192,6 +1192,28 @@ fn sanitize_llvm_name(name: &str) -> String {
     }
 }
 
+fn llvm_escape_c_bytes(s: &str) -> String {
+    let mut out = String::new();
+    for &b in s.as_bytes() {
+        if b.is_ascii_graphic() && b != b'\\' && b != b'"' {
+            out.push(b as char);
+        } else {
+            out.push('\\');
+            out.push_str(&format!("{:02X}", b));
+        }
+    }
+    out.push_str("\\00");
+    out
+}
+
+fn rtedge_spec_for_bool_name(name: &str) -> String {
+    format!("BOOL#{name}")
+}
+
+fn rtedge_spec_for_int_name(name: &str) -> String {
+    format!("INT#{name}")
+}
+
 /// `名前.Xn`（llil と同様。最後の `.` の直後が X/x + 10 進桁）
 fn parse_bit_suffix(name: &str) -> Option<(&str, u32)> {
     let dot = name.rfind('.')?;
@@ -1402,10 +1424,23 @@ impl<'a> BoolCodeGen<'a> {
         &self,
         m: &mut LlvmModule,
         pou_name: &str,
+        assign_targets: &[String],
         output_irs: &[String],
     ) {
         for p in &self.func.params {
             let ir = sanitize_llvm_name(&p.name);
+            let spec = match p.ty {
+                ParamTy::Bool => rtedge_spec_for_bool_name(&p.name),
+                ParamTy::Int => rtedge_spec_for_int_name(&p.name),
+            };
+            let esc = llvm_escape_c_bytes(&spec);
+            let n = spec.as_bytes().len() + 1;
+            m.emit(format!(
+                "@il_spec_{ir} = private unnamed_addr constant [{n} x i8] c\"{esc}\"",
+                ir = ir,
+                n = n,
+                esc = esc
+            ));
             match p.ty {
                 ParamTy::Bool => {
                     m.emit(format!("@il_mem_{ir} = global i1 false, align 1", ir = ir));
@@ -1423,7 +1458,16 @@ impl<'a> BoolCodeGen<'a> {
                 }
             }
         }
-        for out_ir in output_irs {
+        for (out_name, out_ir) in assign_targets.iter().zip(output_irs.iter()) {
+            let spec = rtedge_spec_for_bool_name(out_name);
+            let esc = llvm_escape_c_bytes(&spec);
+            let n = spec.as_bytes().len() + 1;
+            m.emit(format!(
+                "@il_spec_{out_ir} = private unnamed_addr constant [{n} x i8] c\"{esc}\"",
+                out_ir = out_ir,
+                n = n,
+                esc = esc
+            ));
             m.emit(format!(
                 "@il_mem_{out_ir} = global i1 false, align 1",
                 out_ir = out_ir
@@ -1436,7 +1480,45 @@ impl<'a> BoolCodeGen<'a> {
 
         m.emit(format!("define void @{}_slots_init() {{", pou_name));
         m.emit("entry:");
-        m.emit("  ; rtedge: 当面は stack と同様 @il_mem_* を指す。EgApi で il_slot を上書き。");
+        m.emit("  call void @il_rtedge_registry_clear()");
+        m.emit("  ; BOOL#/INT# 命令書式で Eg タグ生成し、il_slot をレジストリに登録。");
+        for p in &self.func.params {
+            let ir = sanitize_llvm_name(&p.name);
+            let n = match p.ty {
+                ParamTy::Bool => rtedge_spec_for_bool_name(&p.name).as_bytes().len() + 1,
+                ParamTy::Int => rtedge_spec_for_int_name(&p.name).as_bytes().len() + 1,
+            };
+            m.emit(format!(
+                "  %sp_{ir} = getelementptr inbounds [{n} x i8], ptr @il_spec_{ir}, i32 0, i32 0",
+                ir = ir,
+                n = n
+            ));
+            m.emit(format!(
+                "  call i8 @Rtedge_TagCreateByInstruction(ptr %sp_{ir}, i8 0)",
+                ir = ir
+            ));
+            m.emit(format!(
+                "  call void @il_rtedge_registry_record_binding(ptr %sp_{ir}, ptr @il_slot_{ir})",
+                ir = ir
+            ));
+        }
+        for (out_name, out_ir) in assign_targets.iter().zip(output_irs.iter()) {
+            let n = rtedge_spec_for_bool_name(out_name).as_bytes().len() + 1;
+            m.emit(format!(
+                "  %so_{out_ir} = getelementptr inbounds [{n} x i8], ptr @il_spec_{out_ir}, i32 0, i32 0",
+                out_ir = out_ir,
+                n = n
+            ));
+            m.emit(format!(
+                "  call i8 @Rtedge_TagCreateByInstruction(ptr %so_{out_ir}, i8 0)",
+                out_ir = out_ir
+            ));
+            m.emit(format!(
+                "  call void @il_rtedge_registry_record_binding(ptr %so_{out_ir}, ptr @il_slot_{out_ir})",
+                out_ir = out_ir
+            ));
+        }
+        m.emit("  ; フォールバック: IlRtedgeRegistry_BindAllSlots まで il_mem を指す。");
         for p in &self.func.params {
             let ir = sanitize_llvm_name(&p.name);
             m.emit(format!(
@@ -1477,11 +1559,22 @@ impl<'a> BoolCodeGen<'a> {
         let pou_name = sanitize_llvm_name(&self.func.name);
 
         if self.memory == MemoryKind::Rtedge {
+            m.emit("declare i8 @Rtedge_TagCreateByInstruction(ptr, i8)");
+            m.emit("declare void @il_rtedge_registry_clear()");
+            m.emit("declare void @il_rtedge_registry_record_binding(ptr, ptr)");
+        }
+
+        if self.memory == MemoryKind::Rtedge {
             let output_irs: Vec<String> = assign_targets
                 .iter()
                 .map(|n| sanitize_llvm_name(n))
                 .collect();
-            self.emit_rtedge_globals_and_slots_init(&mut m, &pou_name, &output_irs);
+            self.emit_rtedge_globals_and_slots_init(
+                &mut m,
+                &pou_name,
+                &assign_targets,
+                &output_irs,
+            );
 
             m.emit(format!("define void @{}() {{", pou_name));
             m.emit("entry:");
@@ -1915,7 +2008,7 @@ fn usage(program: &str) {
     eprintln!();
     eprintln!("ST (Structured Text 風のサブセット) を LLVM IR (.ll) に変換します。");
     eprintln!("PROGRAM では INT / BYTE / WORD / DWORD スカラーと `名前.Xn` ビット指定（BYTE:0..7, WORD:0..15, INT/DWORD:0..31）が使えます。");
-    eprintln!("--memory は省略時 stack（ローカル alloca）。rtedge は BOOL 関数で @il_slot_* / *_slots_init を生成。");
+    eprintln!("--memory は省略時 stack。rtedge は @il_slot_* と *_slots_init（タグ生成・レジストリ）。本番は IlRtedgeRegistry_BindAllSlots を呼ぶ。");
 }
 
 fn main() {

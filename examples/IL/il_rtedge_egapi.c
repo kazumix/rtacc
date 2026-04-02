@@ -1,6 +1,19 @@
 /*
- * examples/PLCP/rtedge.c の Rtedge_TagCreateByInstruction と同じ流れで EgApi を呼ぶ。
- * Variable_* / Heap_* / Functionblock_Register は省略。FUNCTION はセグメントサイズを簡易推定。
+ * examples/PLCP/rtedge.c の Rtedge_TagCreateByInstruction と同じ流れで EgApi を呼ぶ（縮小版）。
+ *
+ * PLCP 本流での FUNCTION#TON#TON_1 の流れ（実体セグメント＋ピンリンク）:
+ *   rtedge.c: Rtedge_TagCreateByInstruction → strrchr で instname="TON_1" を取り出し
+ *   → Rtedge_TagCreate → EgTagCreateSegment(name=TON_1, bufsize=Functionblock_GetSize("TON"), …)
+ *   → Functionblock_Register("TON_1") → functionblock.c: Structure_CreateCatalog
+ *   → structure.c: セグメント上のオフセットと TON_1.EN 等の PLC 変数を link する（親子関係の「リンク」）
+ *
+ * 本ファイルには Variable_* / Heap_* は無い。
+ * - plcp_rtedge_after_segment: PLCP の Functionblock_Register 前段（TON インスタンス登録）
+ * - il_rtedge_structure_create_catalog_*: PLCP structure.c Structure_CreateCatalog に相当し、
+ *   Rtedge_TagGetPointer(inst) と同じ親 link を前提にメンバを「論理タグ」（命令書式文字列）として
+ *   il_rtedge_registry に積む。実体アドレスは Variable の pVal ではなく、IlRtedgeSlots_BindEgEntry で
+ *   link->pSegment + offset（plcp_rtedge_ton_member_offset）に il_slot を合わせる。
+ * llil は FUNCTION セグメントのピンに対して EgTagCreateEx（別バッファ）を出さない。
  *
  * IL_USE_EGAPI && IL_USE_PLCP_RTEDGE のときのみ Rtedge_TagCreateByInstruction を定義。
  * IL_EGAPI_STUB=1: EgTag* は本ファイル内スタブ（単体ビルド用。本番では defines に含めない）。
@@ -8,7 +21,9 @@
 #if defined(IL_USE_EGAPI) && defined(IL_USE_PLCP_RTEDGE)
 
 #include "il_rtedge_registry.h"
+#include "plcp_rtedge_bridge.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -19,6 +34,7 @@ typedef unsigned char BOOL;
 
 #define D_INT 0x0105
 #define D_UINT 0x0201
+#define D_DWORD 0x0203
 #define D_TIME 0x0543
 #define D_FUNCTION 0x0423
 #define D_STRING 0x0542
@@ -39,6 +55,7 @@ static const struct IlKeywordMatch il_kw[] = {
 	{"BOOL#", D_BOOL, 1, 1},
 	{"INT#", D_INT, 4, 2},
 	{"UINT#", D_UINT, 5, 2},
+	{"DWORD#", D_DWORD, 4, 4},
 	{"TIME#", D_TIME, 7, 4},
 	{"FUNCTION#", D_FUNCTION, IL_EGVT_SEGMENT, -1},
 	{"STRING#", D_STRING, IL_EGVT_SEGMENT, 83},
@@ -58,13 +75,125 @@ static uint16_t il_iec_to_edge(uint16_t iec)
 
 static uint16_t il_fb_segment_size_bytes(const char *fbname)
 {
+	unsigned sz;
+
 	if (fbname == NULL)
 		return 64;
-	if (strncmp(fbname, "CTU", 3) == 0)
-		return 32;
-	if (strncmp(fbname, "TP", 2) == 0)
-		return 40;
+	sz = plcp_rtedge_fb_segment_bytes_by_name(fbname);
+	if (sz != 0)
+		return (uint16_t)sz;
 	return 64;
+}
+
+/*
+ * examples/PLCP/structure.c Structure_CreateCatalog の TON 分岐相当:
+ * メンバ名を instname.pin として命令書式で登録（親は呼び出し側で先に push 済み）。
+ * オフセット順は plcp_rtedge_bridge / llil の expand_fb_instance_to_pins（EN…_IN_）と一致。
+ */
+static void il_rtedge_structure_create_catalog_ton(const char *instname)
+{
+	static const struct {
+		const char *mem;
+		const char *prefix;
+	} rows[] = {
+		{ "EN", "BOOL" },
+		{ "IN", "BOOL" },
+		{ "PT", "TIME" },
+		{ "ET", "TIME" },
+		{ "Q", "BOOL" },
+		{ "_IN_", "BOOL" },
+	};
+	char buf[112];
+	size_t i;
+
+	if (instname == NULL)
+		return;
+	for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+		if (snprintf(buf, sizeof buf, "%s#%s.%s", rows[i].prefix, instname, rows[i].mem) >= (int)sizeof buf)
+			continue;
+		(void)il_rtedge_registry_push(buf, 0);
+	}
+}
+
+static void il_rtedge_structure_create_catalog_arith(const char *instname)
+{
+	static const struct {
+		const char *mem;
+		const char *prefix;
+	} rows[] = {
+		{ "EN", "BOOL" },
+		{ "IN1", "INT" },
+		{ "IN2", "INT" },
+		{ "ENO", "BOOL" },
+		{ "OUT", "INT" },
+	};
+	char buf[112];
+	size_t i;
+
+	if (instname == NULL)
+		return;
+	for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+		if (snprintf(buf, sizeof buf, "%s#%s.%s", rows[i].prefix, instname, rows[i].mem) >= (int)sizeof buf)
+			continue;
+		(void)il_rtedge_registry_push(buf, 0);
+	}
+}
+
+static void il_rtedge_structure_create_catalog_ctu(const char *instname)
+{
+	static const struct {
+		const char *mem;
+		const char *prefix;
+	} rows[] = {
+		{ "CU", "BOOL" },
+		{ "RESET", "BOOL" },
+		{ "PV", "INT" },
+		{ "Q", "BOOL" },
+		{ "CV", "INT" },
+		{ "_prev_cu", "BOOL" },
+	};
+	char buf[112];
+	size_t i;
+
+	if (instname == NULL)
+		return;
+	for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+		if (snprintf(buf, sizeof buf, "%s#%s.%s", rows[i].prefix, instname, rows[i].mem) >= (int)sizeof buf)
+			continue;
+		(void)il_rtedge_registry_push(buf, 0);
+	}
+}
+
+static BOOL il_rtedge_fb_has_structure_catalog(const char *FBname)
+{
+	if (FBname == NULL)
+		return FALSE;
+	if (strncmp(FBname, "TON", 3) == 0 || strncmp(FBname, "TOF", 3) == 0 || strncmp(FBname, "TP", 2) == 0)
+		return TRUE;
+	if (strncmp(FBname, "CTU", 3) == 0)
+		return TRUE;
+	if (strncmp(FBname, "ADD", 3) == 0 || strncmp(FBname, "SUB", 3) == 0 || strncmp(FBname, "MUL", 3) == 0
+	    || strncmp(FBname, "DIV", 3) == 0 || strncmp(FBname, "MOD", 3) == 0)
+		return TRUE;
+	return FALSE;
+}
+
+/* 親 FUNCTION#… は呼び出し側で先に push 済み。ここではピンだけ。 */
+static void il_rtedge_structure_create_catalog_members(const char *FBname, const char *instname)
+{
+	if (FBname == NULL || instname == NULL)
+		return;
+	if (strncmp(FBname, "TON", 3) == 0 || strncmp(FBname, "TOF", 3) == 0 || strncmp(FBname, "TP", 2) == 0) {
+		il_rtedge_structure_create_catalog_ton(instname);
+		return;
+	}
+	if (strncmp(FBname, "CTU", 3) == 0) {
+		il_rtedge_structure_create_catalog_ctu(instname);
+		return;
+	}
+	if (strncmp(FBname, "ADD", 3) == 0 || strncmp(FBname, "SUB", 3) == 0 || strncmp(FBname, "MUL", 3) == 0
+	    || strncmp(FBname, "DIV", 3) == 0 || strncmp(FBname, "MOD", 3) == 0)
+		il_rtedge_structure_create_catalog_arith(instname);
 }
 
 #if defined(IL_EGAPI_STUB) && IL_EGAPI_STUB
@@ -124,6 +253,7 @@ static int32_t EgTagWriteSegment(char *name, uint32_t offset, void *buf, uint32_
 BOOL Rtedge_TagCreateByInstruction(char *string, BOOL hidden)
 {
 	BOOL result = FALSE;
+	BOOL registry_done = FALSE;
 	size_t keywordlength;
 	size_t stringlength;
 	char *source;
@@ -151,6 +281,7 @@ BOOL Rtedge_TagCreateByInstruction(char *string, BOOL hidden)
 			memcpy(source, string, stringlength);
 			iectype = current->iectype;
 
+			/* PLCP rtedge.c D_FUNCTION 分岐と同じ: エッジ上の名前は instname のみ（例: TON_1）。 */
 			if (iectype == D_FUNCTION) {
 				instname = strrchr(source, '#');
 				if (instname == NULL) {
@@ -180,6 +311,13 @@ BOOL Rtedge_TagCreateByInstruction(char *string, BOOL hidden)
 					if (z) {
 						(void)EgTagWriteSegment(instname, 0, z, (uint32_t)bufsize);
 						free(z);
+					}
+					plcp_rtedge_after_segment(instname, FBname);
+					/* PLCP: Functionblock_Register → Structure_CreateCatalog */
+					if (il_rtedge_fb_has_structure_catalog(FBname)) {
+						(void)il_rtedge_registry_push(string, (unsigned char)hidden);
+						il_rtedge_structure_create_catalog_members(FBname, instname);
+						registry_done = TRUE;
 					}
 					result = TRUE;
 				}
@@ -227,7 +365,7 @@ BOOL Rtedge_TagCreateByInstruction(char *string, BOOL hidden)
 		current++;
 	}
 
-	if (result)
+	if (result && !registry_done)
 		(void)il_rtedge_registry_push(string, (unsigned char)hidden);
 	return result;
 }

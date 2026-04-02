@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PLCPEN.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PLCPEN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MOVE_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ADD_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BoolTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ByteTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DIntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DWordTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EQ_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GE_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GT_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LE_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LIntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogicOpe_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MUL_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RealTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RotShift_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Select_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SIntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StringOpe_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SUB_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UDIntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UIntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="USIntTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WordTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LT_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LRealTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BcdTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DIV_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EXPT_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MOD_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NE_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NEG_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Numeric_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeTo_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Trunc_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BitOpe_EN.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PLCPEN.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

@@ -85,8 +85,8 @@ $"??_C@_0O@EAMDDGOK@TP_4__running?$AA@" = comdat any
 
 $"??_C@_06LIMNNHKG@TP_4_Q?$AA@" = comdat any
 
-@il_slot_binds = internal unnamed_addr constant [39 x %struct.anon] [%struct.anon { ptr @"??_C@_07GGLECDGK@StartSW?$AA@", ptr @il_slot_StartSW }, %struct.anon { ptr @"??_C@_05BIOODHIB@EndSW?$AA@", ptr @il_slot_EndSW }, %struct.anon { ptr @"??_C@_04BLOPAAJD@AI_1?$AA@", ptr @il_slot_AI_1 }, %struct.anon { ptr @"??_C@_06MAFFGDO@Active?$AA@", ptr @il_slot_Active }, %struct.anon { ptr @"??_C@_09GKKCJGLE@LimitOver?$AA@", ptr @il_slot_LimitOver }, %struct.anon { ptr @"??_C@_0P@PPNHIIKH@LimitOverCount?$AA@", ptr @il_slot_LimitOverCount }, %struct.anon { ptr @"??_C@_03DIANCPKG@Err?$AA@", ptr @il_slot_Err }, %struct.anon { ptr @"??_C@_05GNOGEBCK@TP1_Q?$AA@", ptr @il_slot_TP1_Q }, %struct.anon { ptr @"??_C@_05HPFDOOME@TP2_Q?$AA@", ptr @il_slot_TP2_Q }, %struct.anon { ptr @"??_C@_05MHOPIJKB@TP3_Q?$AA@", ptr @il_slot_TP3_Q }, %struct.anon { ptr @"??_C@_05FKDILBBI@TP4_Q?$AA@", ptr @il_slot_TP4_Q }, %struct.anon { ptr @"??_C@_04LJNKDHAL@LED1?$AA@", ptr @il_slot_LED1 }, %struct.anon { ptr @"??_C@_04JCPHGEMI@LED2?$AA@", ptr @il_slot_LED2 }, %struct.anon { ptr @"??_C@_08BJIPEBNH@CTU_1_CU?$AA@", ptr @il_slot_CTU_1_CU }, %struct.anon { ptr @"??_C@_0M@MFPHPCNC@CTU_1_RESET?$AA@", ptr @il_slot_CTU_1_RESET }, %struct.anon { ptr @"??_C@_08CMMCAPDN@CTU_1_PV?$AA@", ptr @il_slot_CTU_1_PV }, %struct.anon { ptr @"??_C@_0P@OJOMBDBB@CTU_1__prev_cu?$AA@", ptr @il_slot_CTU_1__prev_cu }, %struct.anon { ptr @"??_C@_07IAICHDDO@CTU_1_Q?$AA@", ptr @il_slot_CTU_1_Q }, %struct.anon { ptr @"??_C@_08DCKCBCBE@CTU_1_CV?$AA@", ptr @il_slot_CTU_1_CV }, %struct.anon { ptr @"??_C@_07ILCCNEDJ@TP_1_IN?$AA@", ptr @il_slot_TP_1_IN }, %struct.anon { ptr @"??_C@_07CIPILGBN@TP_1_PT?$AA@", ptr @il_slot_TP_1_PT }, %struct.anon { ptr @"??_C@_0O@IDPGOLGI@TP_1__elapsed?$AA@", ptr @il_slot_TP_1__elapsed }, %struct.anon { ptr @"??_C@_0O@DBJEJKKI@TP_1__running?$AA@", ptr @il_slot_TP_1__running }, %struct.anon { ptr @"??_C@_06IPBDCHJE@TP_1_Q?$AA@", ptr @il_slot_TP_1_Q }, %struct.anon { ptr @"??_C@_07MMICKOOJ@TP_2_IN?$AA@", ptr @il_slot_TP_2_IN }, %struct.anon { ptr @"??_C@_07GPFIMMMN@TP_2_PT?$AA@", ptr @il_slot_TP_2_PT }, %struct.anon { ptr @"??_C@_0O@BKBEINGJ@TP_2__elapsed?$AA@", ptr @il_slot_TP_2__elapsed }, %struct.anon { ptr @"??_C@_0O@KIHGPMKJ@TP_2__running?$AA@", ptr @il_slot_TP_2__running }, %struct.anon { ptr @"??_C@_06JNKGIIHK@TP_2_Q?$AA@", ptr @il_slot_TP_2_Q }, %struct.anon { ptr @"??_C@_07PBOCIHFJ@TP_3_IN?$AA@", ptr @il_slot_TP_3_IN }, %struct.anon { ptr @"??_C@_07FCDIOFHN@TP_3_PT?$AA@", ptr @il_slot_TP_3_PT }, %struct.anon { ptr @"??_C@_0O@NLJKFCKJ@TP_3__elapsed?$AA@", ptr @il_slot_TP_3__elapsed }, %struct.anon { ptr @"??_C@_0O@GJPICDGJ@TP_3__running?$AA@", ptr @il_slot_TP_3__running }, %struct.anon { ptr @"??_C@_06CFBKOPBP@TP_3_Q?$AA@", ptr @il_slot_TP_3_Q }, %struct.anon { ptr @"??_C@_07EDMCFLEJ@TP_4_IN?$AA@", ptr @il_slot_TP_4_IN }, %struct.anon { ptr @"??_C@_07OABIDJGN@TP_4_PT?$AA@", ptr @il_slot_TP_4_PT }, %struct.anon { ptr @"??_C@_0O@PCKBEHCK@TP_4__elapsed?$AA@", ptr @il_slot_TP_4__elapsed }, %struct.anon { ptr @"??_C@_0O@EAMDDGOK@TP_4__running?$AA@", ptr @il_slot_TP_4__running }, %struct.anon { ptr @"??_C@_06LIMNNHKG@TP_4_Q?$AA@", ptr @il_slot_TP_4_Q }], align 4
 @"??_C@_05HKHPEFOF@Entry?$AA@" = linkonce_odr dso_local unnamed_addr constant [6 x i8] c"Entry\00", comdat, align 1
+@il_slot_binds = internal unnamed_addr constant [39 x %struct.anon] [%struct.anon { ptr @"??_C@_07GGLECDGK@StartSW?$AA@", ptr @il_slot_StartSW }, %struct.anon { ptr @"??_C@_05BIOODHIB@EndSW?$AA@", ptr @il_slot_EndSW }, %struct.anon { ptr @"??_C@_04BLOPAAJD@AI_1?$AA@", ptr @il_slot_AI_1 }, %struct.anon { ptr @"??_C@_06MAFFGDO@Active?$AA@", ptr @il_slot_Active }, %struct.anon { ptr @"??_C@_09GKKCJGLE@LimitOver?$AA@", ptr @il_slot_LimitOver }, %struct.anon { ptr @"??_C@_0P@PPNHIIKH@LimitOverCount?$AA@", ptr @il_slot_LimitOverCount }, %struct.anon { ptr @"??_C@_03DIANCPKG@Err?$AA@", ptr @il_slot_Err }, %struct.anon { ptr @"??_C@_05GNOGEBCK@TP1_Q?$AA@", ptr @il_slot_TP1_Q }, %struct.anon { ptr @"??_C@_05HPFDOOME@TP2_Q?$AA@", ptr @il_slot_TP2_Q }, %struct.anon { ptr @"??_C@_05MHOPIJKB@TP3_Q?$AA@", ptr @il_slot_TP3_Q }, %struct.anon { ptr @"??_C@_05FKDILBBI@TP4_Q?$AA@", ptr @il_slot_TP4_Q }, %struct.anon { ptr @"??_C@_04LJNKDHAL@LED1?$AA@", ptr @il_slot_LED1 }, %struct.anon { ptr @"??_C@_04JCPHGEMI@LED2?$AA@", ptr @il_slot_LED2 }, %struct.anon { ptr @"??_C@_08BJIPEBNH@CTU_1_CU?$AA@", ptr @il_slot_CTU_1_CU }, %struct.anon { ptr @"??_C@_0M@MFPHPCNC@CTU_1_RESET?$AA@", ptr @il_slot_CTU_1_RESET }, %struct.anon { ptr @"??_C@_08CMMCAPDN@CTU_1_PV?$AA@", ptr @il_slot_CTU_1_PV }, %struct.anon { ptr @"??_C@_0P@OJOMBDBB@CTU_1__prev_cu?$AA@", ptr @il_slot_CTU_1__prev_cu }, %struct.anon { ptr @"??_C@_07IAICHDDO@CTU_1_Q?$AA@", ptr @il_slot_CTU_1_Q }, %struct.anon { ptr @"??_C@_08DCKCBCBE@CTU_1_CV?$AA@", ptr @il_slot_CTU_1_CV }, %struct.anon { ptr @"??_C@_07ILCCNEDJ@TP_1_IN?$AA@", ptr @il_slot_TP_1_IN }, %struct.anon { ptr @"??_C@_07CIPILGBN@TP_1_PT?$AA@", ptr @il_slot_TP_1_PT }, %struct.anon { ptr @"??_C@_0O@IDPGOLGI@TP_1__elapsed?$AA@", ptr @il_slot_TP_1__elapsed }, %struct.anon { ptr @"??_C@_0O@DBJEJKKI@TP_1__running?$AA@", ptr @il_slot_TP_1__running }, %struct.anon { ptr @"??_C@_06IPBDCHJE@TP_1_Q?$AA@", ptr @il_slot_TP_1_Q }, %struct.anon { ptr @"??_C@_07MMICKOOJ@TP_2_IN?$AA@", ptr @il_slot_TP_2_IN }, %struct.anon { ptr @"??_C@_07GPFIMMMN@TP_2_PT?$AA@", ptr @il_slot_TP_2_PT }, %struct.anon { ptr @"??_C@_0O@BKBEINGJ@TP_2__elapsed?$AA@", ptr @il_slot_TP_2__elapsed }, %struct.anon { ptr @"??_C@_0O@KIHGPMKJ@TP_2__running?$AA@", ptr @il_slot_TP_2__running }, %struct.anon { ptr @"??_C@_06JNKGIIHK@TP_2_Q?$AA@", ptr @il_slot_TP_2_Q }, %struct.anon { ptr @"??_C@_07PBOCIHFJ@TP_3_IN?$AA@", ptr @il_slot_TP_3_IN }, %struct.anon { ptr @"??_C@_07FCDIOFHN@TP_3_PT?$AA@", ptr @il_slot_TP_3_PT }, %struct.anon { ptr @"??_C@_0O@NLJKFCKJ@TP_3__elapsed?$AA@", ptr @il_slot_TP_3__elapsed }, %struct.anon { ptr @"??_C@_0O@GJPICDGJ@TP_3__running?$AA@", ptr @il_slot_TP_3__running }, %struct.anon { ptr @"??_C@_06CFBKOPBP@TP_3_Q?$AA@", ptr @il_slot_TP_3_Q }, %struct.anon { ptr @"??_C@_07EDMCFLEJ@TP_4_IN?$AA@", ptr @il_slot_TP_4_IN }, %struct.anon { ptr @"??_C@_07OABIDJGN@TP_4_PT?$AA@", ptr @il_slot_TP_4_PT }, %struct.anon { ptr @"??_C@_0O@PCKBEHCK@TP_4__elapsed?$AA@", ptr @il_slot_TP_4__elapsed }, %struct.anon { ptr @"??_C@_0O@EAMDDGOK@TP_4__running?$AA@", ptr @il_slot_TP_4__running }, %struct.anon { ptr @"??_C@_06LIMNNHKG@TP_4_Q?$AA@", ptr @il_slot_TP_4_Q }], align 4
 @"??_C@_07GGLECDGK@StartSW?$AA@" = linkonce_odr dso_local unnamed_addr constant [8 x i8] c"StartSW\00", comdat, align 1
 @il_slot_StartSW = external dso_local global ptr, align 4
 @"??_C@_05BIOODHIB@EndSW?$AA@" = linkonce_odr dso_local unnamed_addr constant [6 x i8] c"EndSW\00", comdat, align 1
@@ -167,6 +167,67 @@ $"??_C@_06LIMNNHKG@TP_4_Q?$AA@" = comdat any
 @il_slot_TP_4_Q = external dso_local global ptr, align 4
 
 ; Function Attrs: nounwind
+define dso_local void @IlRtedge_BindTonPinSlot(ptr noundef writeonly captures(address_is_null) %0, ptr noundef %1, i32 noundef %2) local_unnamed_addr #0 {
+  %4 = alloca ptr, align 4
+  call void @llvm.lifetime.start.p0(ptr nonnull %4) #3
+  store ptr null, ptr %4, align 4
+  %5 = icmp eq ptr %0, null
+  %6 = icmp eq ptr %1, null
+  %7 = or i1 %5, %6
+  br i1 %7, label %33, label %8
+
+8:                                                ; preds = %3
+  %9 = call i32 @EgTagGetProperty(ptr noundef nonnull %1, ptr noundef nonnull @"??_C@_05HKHPEFOF@Entry?$AA@", ptr noundef nonnull %4, i32 noundef 4) #3
+  %10 = icmp ne i32 %9, 0
+  %11 = load ptr, ptr %4, align 4
+  %12 = icmp eq ptr %11, null
+  %13 = select i1 %10, i1 true, i1 %12
+  br i1 %13, label %33, label %14
+
+14:                                               ; preds = %8
+  %15 = getelementptr inbounds nuw i8, ptr %11, i32 3
+  %16 = load i16, ptr %15, align 1
+  %17 = icmp eq i16 %16, 13
+  br i1 %17, label %24, label %18
+
+18:                                               ; preds = %14
+  %19 = getelementptr inbounds nuw i8, ptr %11, i32 385
+  %20 = load i32, ptr %19, align 1
+  %21 = icmp eq i32 %20, 1
+  br i1 %21, label %24, label %22
+
+22:                                               ; preds = %18
+  %23 = getelementptr inbounds nuw i8, ptr %11, i32 15
+  br label %30
+
+24:                                               ; preds = %14, %18
+  %25 = getelementptr inbounds nuw i8, ptr %11, i32 23
+  %26 = load i64, ptr %25, align 1
+  %27 = trunc i64 %26 to i32
+  %28 = inttoptr i32 %27 to ptr
+  %29 = icmp eq i32 %27, 0
+  br i1 %29, label %33, label %30
+
+30:                                               ; preds = %22, %24
+  %31 = phi ptr [ %23, %22 ], [ %28, %24 ]
+  %32 = getelementptr inbounds nuw i8, ptr %31, i32 %2
+  store ptr %32, ptr %0, align 4
+  br label %33
+
+33:                                               ; preds = %24, %8, %3, %30
+  call void @llvm.lifetime.end.p0(ptr nonnull %4) #3
+  ret void
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.lifetime.start.p0(ptr captures(none)) #1
+
+declare dllimport i32 @EgTagGetProperty(ptr noundef, ptr noundef, ptr noundef, i32 noundef) local_unnamed_addr #2
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.lifetime.end.p0(ptr captures(none)) #1
+
+; Function Attrs: nounwind
 define dso_local void @IlRtedgeSlots_BindEgEntry() local_unnamed_addr #0 {
   %1 = alloca ptr, align 4
   br label %2
@@ -223,14 +284,6 @@ define dso_local void @IlRtedgeSlots_BindEgEntry() local_unnamed_addr #0 {
 33:                                               ; preds = %30
   ret void
 }
-
-; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.lifetime.start.p0(ptr captures(none)) #1
-
-declare dllimport i32 @EgTagGetProperty(ptr noundef, ptr noundef, ptr noundef, i32 noundef) local_unnamed_addr #2
-
-; Function Attrs: mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.lifetime.end.p0(ptr captures(none)) #1
 
 attributes #0 = { nounwind "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="pentium4" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 attributes #1 = { mustprogress nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }

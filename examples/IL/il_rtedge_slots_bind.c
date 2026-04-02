@@ -26,6 +26,25 @@ static void *il_rtedge_dataptr_from_tagdesc(TagsDesc *td)
 	return (void *)&td->var.val;
 }
 
+/*
+ * llil が生成する *_slots_init から呼ばれる。
+ * PLCP structure.c: pVal = (BYTE *)link->pSegment + offset に相当。
+ */
+void IlRtedge_BindTonPinSlot(void **slot_pp, const char *inst_z, int32_t byte_offset)
+{
+	TagsDesc *td = NULL;
+	void *base;
+
+	if (slot_pp == NULL || inst_z == NULL)
+		return;
+	if (EgTagGetProperty(inst_z, "Entry", &td, sizeof(td)) != EDGE_SUCCESS || td == NULL)
+		return;
+	base = il_rtedge_dataptr_from_tagdesc(td);
+	if (base == NULL)
+		return;
+	*slot_pp = (unsigned char *)base + (unsigned)byte_offset;
+}
+
 #define IL_SLOT_EXT(name) extern void *il_slot_##name
 #define IL_BIND(name) { #name, (void **)&il_slot_##name }
 
@@ -129,6 +148,13 @@ void IlRtedgeSlots_BindEgEntry(void)
 }
 
 #else
+
+void IlRtedge_BindTonPinSlot(void **slot_pp, const char *inst_z, int32_t byte_offset)
+{
+	(void)slot_pp;
+	(void)inst_z;
+	(void)byte_offset;
+}
 
 void IlRtedgeSlots_BindEgEntry(void) {}
 

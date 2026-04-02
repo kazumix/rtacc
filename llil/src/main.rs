@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -262,10 +262,299 @@ enum Instr {
     Cal(String),  // CAL のインスタンス名（例: CTU_1）
 }
 
+/// `VAR FUNCTION#TON#TON_1` のような FB インスタンス宣言（IL ソースに書く）。
+#[derive(Debug, Clone)]
+struct FbInstanceDecl {
+    family: String,
+    inst: String,
+}
+
 #[derive(Debug, Clone)]
 struct IlProgram {
     vars: Vec<VarDecl>,
     instrs: Vec<Instr>,
+    fb_instances: Vec<FbInstanceDecl>,
+}
+
+/// FUNCTION 宣言からピン＋内部変数を生成（rtedge のスカラータグ・il_mem と一致させる）。
+fn expand_fb_instance_to_pins(fb: &FbInstanceDecl) -> Result<Vec<VarDecl>, String> {
+    let fam = fb.family.to_ascii_uppercase();
+    let i = &fb.inst;
+    match fam.as_str() {
+        "TON" | "TOF" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.PT"),
+                ty: VarType::Time,
+            },
+            VarDecl {
+                name: format!("{i}.ET"),
+                ty: VarType::Time,
+            },
+            VarDecl {
+                name: format!("{i}.Q"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}._IN_"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "TP" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.PT"),
+                ty: VarType::Time,
+            },
+            VarDecl {
+                name: format!("{i}.ET"),
+                ty: VarType::Time,
+            },
+            VarDecl {
+                name: format!("{i}.Q"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}._IN_"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "CTU" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.CU"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.RESET"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.PV"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.Q"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.CV"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}._prev_cu"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "ADD" | "SUB" | "MUL" | "DIV" | "MOD" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN1"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.IN2"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Int,
+            },
+        ]),
+        "AND" | "OR" | "XOR" | "ANDN" | "ORN" | "XORN" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN1"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN2"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "EQ" | "NE" | "GT" | "GE" | "LT" | "LE" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN1"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.IN2"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "NOT" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "MOVE" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Int,
+            },
+        ]),
+        "LN" | "LOG" | "EXP" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Bool,
+            },
+        ]),
+        "EXPT" | "SHR" | "SHL" | "ROL" | "BIT_TEST" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN1"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.IN2"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Int,
+            },
+        ]),
+        "R_TRIG" | "F_TRIG" => Ok(vec![
+            VarDecl {
+                name: format!("{i}.CLK"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.Q"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}._prev_clk"),
+                ty: VarType::Bool,
+            },
+        ]),
+        /* 型変換 WORD_TO_* 等はプレフィックス一致で fb_member_byte_offset のみ展開。ピンは IL から推論。 */
+        _ if family_is_type_conversion_en_llil(&fam) => Ok(vec![
+            VarDecl {
+                name: format!("{i}.EN"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.IN"),
+                ty: VarType::Int,
+            },
+            VarDecl {
+                name: format!("{i}.ENO"),
+                ty: VarType::Bool,
+            },
+            VarDecl {
+                name: format!("{i}.OUT"),
+                ty: VarType::Int,
+            },
+        ]),
+        /* 上記以外でレイアウト未登録のファミリは空（スカラータグのみ）。 */
+        _ => Ok(vec![]),
+    }
+}
+
+fn merge_fb_pins_into_program(prog: &IlProgram) -> Result<IlProgram, String> {
+    use std::collections::HashSet;
+    let mut vars = prog.vars.clone();
+    let mut seen: HashSet<String> = vars.iter().map(|v| v.name.clone()).collect();
+    for fb in &prog.fb_instances {
+        for pin in expand_fb_instance_to_pins(fb)? {
+            if seen.insert(pin.name.clone()) {
+                vars.push(pin);
+            }
+        }
+    }
+    Ok(IlProgram {
+        vars,
+        instrs: prog.instrs.clone(),
+        fb_instances: prog.fb_instances.clone(),
+    })
 }
 
 struct Parser {
@@ -304,13 +593,14 @@ impl Parser {
 
     fn parse_program(&mut self) -> Result<IlProgram, String> {
         let mut vars = Vec::new();
+        let mut fb_instances = Vec::new();
         let mut instrs = Vec::new();
 
         while let Some(tok) = self.peek() {
             match &tok.kind {
                 TokenKind::Var => {
                     self.bump();
-                    self.parse_var_line(&mut vars)?;
+                    self.parse_var_line(&mut vars, &mut fb_instances)?;
                 }
                 TokenKind::Ld
                 | TokenKind::Ldn
@@ -341,7 +631,11 @@ impl Parser {
             }
         }
 
-        Ok(IlProgram { vars, instrs })
+        Ok(IlProgram {
+            vars,
+            instrs,
+            fb_instances,
+        })
     }
 
     fn skip_line(&mut self) {
@@ -354,9 +648,12 @@ impl Parser {
         }
     }
 
-    fn parse_var_line(&mut self, out: &mut Vec<VarDecl>) -> Result<(), String> {
-        // 形式: VAR INT#LimitOverCount / VAR BOOL#Start などを想定。
-        // IDENT の中に `TYPE#Name` が入っている前提で、`#` で分割する。
+    fn parse_var_line(
+        &mut self,
+        out: &mut Vec<VarDecl>,
+        out_fb: &mut Vec<FbInstanceDecl>,
+    ) -> Result<(), String> {
+        // 形式: VAR INT#LimitOverCount / VAR BOOL#Start / VAR FUNCTION#TON#TON_1 など。
         let tok = self
             .bump()
             .ok_or_else(|| "VAR 行で型/変数名トークンを期待しましたが入力が終わっています".to_string())?;
@@ -364,8 +661,6 @@ impl Parser {
         let ident = match tok.kind {
             TokenKind::Ident(s) => s,
             _ => {
-                // 未対応形式の VAR 行（例: VAR FUNCTION#...）はスキップ
-                // 行末まで読み飛ばす
                 while let Some(tok) = self.peek() {
                     if matches!(tok.kind, TokenKind::Newline) {
                         self.bump();
@@ -376,6 +671,27 @@ impl Parser {
                 return Ok(());
             }
         };
+
+        let sharp: Vec<&str> = ident.split('#').collect();
+        if sharp.len() >= 3 && sharp[0].eq_ignore_ascii_case("FUNCTION") {
+            let family = sharp[1].to_string();
+            let inst = sharp[2..].join("#");
+            if family.is_empty() || inst.is_empty() {
+                return Err(format!(
+                    "VAR FUNCTION の形式が不正です（FUNCTION#ファミリ#インスタンス名）: {}",
+                    ident
+                ));
+            }
+            out_fb.push(FbInstanceDecl { family, inst });
+            while let Some(tok) = self.peek() {
+                if matches!(tok.kind, TokenKind::Newline) {
+                    self.bump();
+                    break;
+                }
+                self.bump();
+            }
+            return Ok(());
+        }
 
         let mut parts = ident.splitn(2, '#');
         let ty_str = parts.next().unwrap_or("").to_ascii_uppercase();
@@ -616,6 +932,165 @@ fn llvm_elem_ty(ty: VarType) -> Option<&'static str> {
     }
 }
 
+fn rtedge_instruction_spec(v: &VarDecl) -> Option<String> {
+    let prefix = match v.ty {
+        VarType::Bool => "BOOL",
+        VarType::Byte => "BYTE",
+        VarType::Word => "WORD",
+        VarType::Int => "INT",
+        VarType::Uint => "UINT",
+        VarType::Dword => "DWORD",
+        VarType::Time => "TIME",
+    };
+    Some(format!("{}#{}", prefix, v.name))
+}
+
+fn family_is_type_conversion_en_llil(family: &str) -> bool {
+    let u = family.to_ascii_uppercase();
+    u.starts_with("WORD_TO_")
+        || u.starts_with("DWORD_TO_")
+        || u.starts_with("UDINT_TO_")
+        || u.starts_with("INT_TO_")
+        || u.starts_with("REAL_TO_")
+        || u.starts_with("LREAL_TO_")
+        || u.starts_with("BOOL_TO_")
+        || u.starts_with("BYTE_TO_")
+        || u.starts_with("SINT_TO_")
+        || u.starts_with("UINT_TO_")
+        || u.starts_with("USINT_TO_")
+}
+
+/// `plcp_rtedge` の `fb_layout::fb_member_offset` / `plcp_rtedge_fb_member_offset` と一致。
+fn fb_member_byte_offset(family: &str, member: &str) -> Option<i32> {
+    let fam = family.to_ascii_uppercase();
+    let m = member;
+    if family_is_type_conversion_en_llil(&fam) {
+        return not_pin_byte_offset(m);
+    }
+    if fam.starts_with("R_TRIG") || fam.starts_with("F_TRIG") {
+        return Some(match m {
+            "CLK" => 0,
+            "Q" => 1,
+            "_prev_clk" | "_PREV_CLK" => 2,
+            _ => return None,
+        });
+    }
+    match fam.as_str() {
+        "TON" | "TOF" | "TP" => Some(match m {
+            "EN" => 0,
+            "IN" => 1,
+            "PT" => 4,
+            "ET" => 8,
+            "Q" => 12,
+            "_IN_" => 13,
+            "_STTIME_" => 16,
+            _ => return None,
+        }),
+        "CTU" => Some(match m {
+            "CU" => 0,
+            "RESET" => 1,
+            "PV" => 2,
+            "Q" => 4,
+            "CV" => 5,
+            "_prev_cu" | "_CU_" => 7,
+            _ => return None,
+        }),
+        "CTD" => Some(match m {
+            "CD" => 0,
+            "LOAD" => 1,
+            "PV" => 2,
+            "Q" => 4,
+            "CV" => 5,
+            "_prev_cd" | "_CD_" => 7,
+            _ => return None,
+        }),
+        "CTUD" => Some(match m {
+            "CU" => 0,
+            "CD" => 1,
+            "RESET" => 2,
+            "LOAD" => 3,
+            "PV" => 4,
+            "QU" => 6,
+            "QD" => 7,
+            "CV" => 8,
+            "_prev_cu" | "_CU_" => 10,
+            "_prev_cd" | "_CD_" => 11,
+            _ => return None,
+        }),
+        "ADD" | "SUB" | "MUL" | "DIV" | "MOD" => arith_pin_byte_offset(m),
+        "AND" | "OR" | "XOR" | "ANDN" | "ORN" | "XORN" | "EQ" | "NE" | "GT" | "GE" | "LT" | "LE" => {
+            arith_pin_byte_offset(m)
+        }
+        "NOT" | "MOVE" | "LN" | "LOG" | "EXP" => not_pin_byte_offset(m),
+        "EXPT" | "SHR" | "SHL" | "ROL" | "BIT_TEST" => arith_pin_byte_offset(m),
+        _ => None,
+    }
+}
+
+fn arith_pin_byte_offset(m: &str) -> Option<i32> {
+    Some(match m {
+        "EN" => 0,
+        "IN1" => 1,
+        "IN2" => 5,
+        "ENO" => 9,
+        "OUT" => 10,
+        _ => return None,
+    })
+}
+
+fn not_pin_byte_offset(m: &str) -> Option<i32> {
+    Some(match m {
+        "EN" => 0,
+        "IN" => 1,
+        "ENO" => 5,
+        "OUT" => 6,
+        _ => return None,
+    })
+}
+
+/// `VAR FUNCTION#…#inst` 由来の FB ピン（セグメント内オフセット）。EgTagCreateEx は出さない。
+fn is_fb_segment_pin_name(name: &str, fb_instances: &[FbInstanceDecl]) -> bool {
+    let Some((inst, member)) = name.rsplit_once('.') else {
+        return false;
+    };
+    let Some(fb) = fb_instances.iter().find(|fb| fb.inst == inst) else {
+        return false;
+    };
+    fb_member_byte_offset(&fb.family, member).is_some()
+}
+
+/// 変数 `ir`（サニタイズ済み名）の実データへのポインタ。
+/// stack: `@il_mem_*`、rtedge: `load ptr, ptr @il_slot_*`（1 命令を生成して SSA を返す）。
+fn emit_var_data_ptr(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    ir: &str,
+) -> String {
+    match memory {
+        MemoryKind::Stack => format!("@il_mem_{ir}"),
+        MemoryKind::Rtedge => {
+            let t = fresh_tmp();
+            m.emit(format!("  {t} = load ptr, ptr @il_slot_{ir}"));
+            t
+        }
+    }
+}
+
+fn llvm_escape_c_bytes(s: &str) -> String {
+    let mut out = String::new();
+    for &b in s.as_bytes() {
+        if b.is_ascii_graphic() && b != b'\\' && b != b'"' {
+            out.push(b as char);
+        } else {
+            out.push('\\');
+            out.push_str(&format!("{:02X}", b));
+        }
+    }
+    out.push_str("\\00");
+    out
+}
+
 /// IL の即値かどうか判定し、整数ならその値を返す。例: INT#5 -> Some(5), UINT#100 -> Some(100)
 fn parse_int_literal(operand: &str) -> Option<i64> {
     let s = operand.trim();
@@ -709,8 +1184,12 @@ fn infer_var_types(prog: &IlProgram) -> HashMap<String, VarType> {
         let next = instrs.get(i + 1);
         match instr {
             Instr::Ld(name) | Instr::Ldn(name) => {
-                if is_int_literal(name) || is_time_literal(name) {
+                if is_int_literal(name) {
                     acc_type = Some(VarType::Int);
+                    continue;
+                }
+                if is_time_literal(name) {
+                    acc_type = Some(VarType::Time);
                     continue;
                 }
                 if parse_bit_suffix(name).is_some() {
@@ -750,7 +1229,15 @@ fn infer_var_types(prog: &IlProgram) -> HashMap<String, VarType> {
                     continue;
                 }
                 if let Some(aty) = acc_type {
-                    var_types.insert(name.clone(), aty);
+                    // LD TIME# の直後は acc が Int と誤認されうるため、FB メンバ名で上書きする。
+                    let ty = if name.contains(".PV") || name.contains(".CV") {
+                        VarType::Int
+                    } else if name.contains(".PT") || name.contains(".ET") {
+                        VarType::Time
+                    } else {
+                        aty
+                    };
+                    var_types.insert(name.clone(), ty);
                 }
             }
             Instr::Set(name) | Instr::Reset(name) => {
@@ -802,6 +1289,7 @@ fn llvm_global_ty_and_init(v: &VarDecl) -> (&'static str, &'static str, &'static
 fn emit_global_slots(
     m: &mut LlvmModule,
     vars: &[VarDecl],
+    fb_instances: &[FbInstanceDecl],
     pou_name: &str,
     memory: MemoryKind,
 ) {
@@ -829,10 +1317,130 @@ fn emit_global_slots(
     }
 
     if memory == MemoryKind::Rtedge {
+        let mut fb_inst_z: HashSet<String> = HashSet::new();
+        for v in vars {
+            if is_fb_segment_pin_name(&v.name, fb_instances) {
+                if let Some((inst, _)) = v.name.rsplit_once('.') {
+                    fb_inst_z.insert(inst.to_string());
+                }
+            }
+        }
+        let mut fb_inst_sorted: Vec<String> = fb_inst_z.into_iter().collect();
+        fb_inst_sorted.sort();
+
+        for fb in fb_instances {
+            let seg_spec = format!("FUNCTION#{}#{}", fb.family, fb.inst);
+            let seg_ir = sanitize_llvm_name(&format!("fbseg_{}", fb.inst));
+            let esc = llvm_escape_c_bytes(&seg_spec);
+            let n = seg_spec.as_bytes().len() + 1;
+            m.emit(format!(
+                "@il_spec_{seg_ir} = private unnamed_addr constant [{n} x i8] c\"{esc}\"",
+                seg_ir = seg_ir,
+                n = n,
+                esc = esc
+            ));
+        }
+        for inst in &fb_inst_sorted {
+            let inst_ir = sanitize_llvm_name(inst);
+            let esc = llvm_escape_c_bytes(inst);
+            let n = inst.as_bytes().len() + 1;
+            m.emit(format!(
+                "@il_fb_z_{inst_ir} = private unnamed_addr constant [{n} x i8] c\"{esc}\"",
+                inst_ir = inst_ir,
+                n = n,
+                esc = esc
+            ));
+        }
+        for v in vars {
+            if is_fb_segment_pin_name(&v.name, fb_instances) {
+                continue;
+            }
+            if let Some(spec) = rtedge_instruction_spec(v) {
+                let ir = sanitize_llvm_name(&v.name);
+                let esc = llvm_escape_c_bytes(&spec);
+                let n = spec.as_bytes().len() + 1;
+                m.emit(format!(
+                    "@il_spec_{ir} = private unnamed_addr constant [{n} x i8] c\"{esc}\"",
+                    ir = ir,
+                    n = n,
+                    esc = esc
+                ));
+            }
+        }
         m.emit(format!("define void @{}_slots_init() {{", pou_name));
         m.emit("entry:");
-        m.emit("  ; rtedge: 将来はタグ解決。当面は stack と同じく @il_mem_* を指して動作させる。");
+        m.emit("  call void @il_rtedge_registry_clear()");
+        m.emit("  ; rtedge: FUNCTION セグメント → FB ピンは Eg Entry+offset → il_slot（IlRtedge_BindTonPinSlot）→ スカラータグ");
+        for fb in fb_instances {
+            let seg_ir = sanitize_llvm_name(&format!("fbseg_{}", fb.inst));
+            let seg_spec = format!("FUNCTION#{}#{}", fb.family, fb.inst);
+            let n = seg_spec.as_bytes().len() + 1;
+            m.emit(format!(
+                "  %spec_{seg_ir} = getelementptr inbounds [{n} x i8], ptr @il_spec_{seg_ir}, i32 0, i32 0",
+                seg_ir = seg_ir,
+                n = n
+            ));
+            m.emit(format!(
+                "  call i8 @Rtedge_TagCreateByInstruction(ptr %spec_{seg_ir}, i8 0)",
+                seg_ir = seg_ir
+            ));
+        }
+        m.emit("  ; FB: PLCP Structure_CreateCatalog 相当 — EgTagGetProperty(inst,Entry)→pSegment + offset");
         for v in vars {
+            if !is_fb_segment_pin_name(&v.name, fb_instances) {
+                continue;
+            }
+            let Some((inst, member)) = v.name.rsplit_once('.') else {
+                continue;
+            };
+            let Some(fb) = fb_instances.iter().find(|fb| fb.inst == inst) else {
+                continue;
+            };
+            let Some(off) = fb_member_byte_offset(&fb.family, member) else {
+                continue;
+            };
+            let ir = sanitize_llvm_name(&v.name);
+            let inst_ir = sanitize_llvm_name(inst);
+            let n = inst.as_bytes().len() + 1;
+            m.emit(format!(
+                "  %fbp_{ir} = getelementptr inbounds [{n} x i8], ptr @il_fb_z_{inst_ir}, i32 0, i32 0",
+                ir = ir,
+                n = n,
+                inst_ir = inst_ir
+            ));
+            m.emit(format!(
+                "  call void @IlRtedge_BindTonPinSlot(ptr @il_slot_{ir}, ptr %fbp_{ir}, i32 {off})",
+                ir = ir,
+                off = off
+            ));
+        }
+        for v in vars {
+            if is_fb_segment_pin_name(&v.name, fb_instances) {
+                continue;
+            }
+            if rtedge_instruction_spec(v).is_some() {
+                let ir = sanitize_llvm_name(&v.name);
+                let n = rtedge_instruction_spec(v).unwrap().as_bytes().len() + 1;
+                m.emit(format!(
+                    "  %spec_{ir} = getelementptr inbounds [{n} x i8], ptr @il_spec_{ir}, i32 0, i32 0",
+                    ir = ir,
+                    n = n
+                ));
+                m.emit(format!(
+                    "  call i8 @Rtedge_TagCreateByInstruction(ptr %spec_{ir}, i8 0)",
+                    ir = ir
+                ));
+                m.emit(format!(
+                    "  call void @il_rtedge_registry_record_binding(ptr %spec_{ir}, ptr @il_slot_{ir})",
+                    ir = ir
+                ));
+            }
+        }
+        m.emit("  ; フォールバック: Entry バインド前は il_mem を指す（FB ピンは上で Entry+offset 済み）。");
+        for v in vars {
+            if is_fb_segment_pin_name(&v.name, fb_instances) {
+                continue;
+            }
             let ir = sanitize_llvm_name(&v.name);
             m.emit(format!(
                 "  store ptr @il_mem_{ir}, ptr @il_slot_{ir}",
@@ -851,13 +1459,14 @@ fn compile_il_to_llvm_ir(
     entry_name: &str,
     memory: MemoryKind,
 ) -> Result<String, String> {
-    let var_types = infer_var_types(prog);
+    let prog_m = merge_fb_pins_into_program(prog)?;
+    let var_types = infer_var_types(&prog_m);
 
     // 即値以外の名前を変数リストに（型は推論結果またはメンバから）
-    let mut vars: Vec<VarDecl> = prog.vars.clone();
+    let mut vars: Vec<VarDecl> = prog_m.vars.clone();
     let mut declared: HashMap<String, VarType> = vars.iter().map(|v| (v.name.clone(), v.ty)).collect();
 
-    for instr in &prog.instrs {
+    for instr in &prog_m.instrs {
         match instr {
             Instr::Cal(inst) => {
                 if inst.starts_with("CTU") {
@@ -881,6 +1490,16 @@ fn compile_il_to_llvm_ir(
                                 ty,
                             });
                         }
+                    }
+                }
+                if inst.starts_with("TON") {
+                    let prev_in = format!("{}._IN_", inst);
+                    if !declared.contains_key(&prev_in) {
+                        declared.insert(prev_in.clone(), VarType::Bool);
+                        vars.push(VarDecl {
+                            name: prev_in,
+                            ty: VarType::Bool,
+                        });
                     }
                 }
                 if inst.starts_with("R_TRIG") || inst.starts_with("F_TRIG") {
@@ -954,7 +1573,7 @@ fn compile_il_to_llvm_ir(
         }
     }
 
-    validate_bit_operands_in_program(&vars, prog)?;
+    validate_bit_operands_in_program(&vars, &prog_m)?;
 
     let mut m = LlvmModule::new();
 
@@ -965,11 +1584,17 @@ fn compile_il_to_llvm_ir(
     // clang が出す .ll と llvm-link するため datalayout / triple を揃える
     m.emit("target datalayout = \"e-m:x-p:32:32-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32-a:0:32-S32\"");
     m.emit("target triple = \"i386-pc-windows-msvc\"");
+    if memory == MemoryKind::Rtedge {
+        m.emit("declare i8 @Rtedge_TagCreateByInstruction(ptr, i8)");
+        m.emit("declare void @il_rtedge_registry_clear()");
+        m.emit("declare void @il_rtedge_registry_record_binding(ptr, ptr)");
+        m.emit("declare void @IlRtedge_BindTonPinSlot(ptr, ptr, i32)");
+    }
 
     // POU 名（ファイル名ベース）を LLVM 用にサニタイズして関数名に使う。
     let pou_name = sanitize_llvm_name(entry_name);
 
-    emit_global_slots(&mut m, &vars, &pou_name, memory);
+    emit_global_slots(&mut m, &vars, &prog_m.fb_instances, &pou_name, memory);
 
     emit_ctu_step(&mut m);
     emit_tp_step(&mut m);
@@ -981,14 +1606,7 @@ fn compile_il_to_llvm_ir(
     m.emit(format!("define i32 @{}() {{", pou_name));
     m.emit("entry:");
 
-    // 変数はグローバル @il_mem_* / @il_slot_*（stack 時は il_slot が il_mem を指す定数初期化）
-    for v in &vars {
-        let ir_name = sanitize_llvm_name(&v.name);
-        m.emit(format!(
-            "  %ptr_{ir_name} = load ptr, ptr @il_slot_{ir_name}",
-            ir_name = ir_name
-        ));
-    }
+    // stack: @il_mem_* を直接参照。rtedge: 各アクセスで il_slot から実ポインタを load。
 
     // アキュムレータ（BOOL 用 / INT 用）
     m.emit("  %acc = alloca i1");
@@ -1004,7 +1622,7 @@ fn compile_il_to_llvm_ir(
         name
     };
 
-    for instr in &prog.instrs {
+    for instr in &prog_m.instrs {
         match instr {
             Instr::Ld(name) | Instr::Ldn(name) => {
                 // INT#5 / UINT#100 即値: int アキュムレータに格納
@@ -1029,7 +1647,8 @@ fn compile_il_to_llvm_ir(
                     let ir_name = sanitize_llvm_name(operand_base(name));
                     let elt = llvm_elem_ty(ty).unwrap();
                     let v = fresh_tmp();
-                    m.emit(format!("  {v} = load {elt}, ptr %ptr_{ir_name}"));
+                    let dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
+                    m.emit(format!("  {v} = load {elt}, ptr {dptr}"));
                     let sh = fresh_tmp();
                     m.emit(format!("  {sh} = lshr {elt} {v}, {bit}"));
                     let b1 = fresh_tmp();
@@ -1060,22 +1679,23 @@ fn compile_il_to_llvm_ir(
                 ) {
                     // LD <整数/時間変数>: int_acc にロード（BYTE/WORD は zext）
                     let ir_name = sanitize_llvm_name(name);
+                    let dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
                     let tmp = fresh_tmp();
                     match ty {
                         VarType::Byte => {
-                            m.emit(format!("  {tmp} = load i8, ptr %ptr_{ir_name}"));
+                            m.emit(format!("  {tmp} = load i8, ptr {dptr}"));
                             let z = fresh_tmp();
                             m.emit(format!("  {z} = zext i8 {tmp} to i32"));
                             m.emit(format!("  store i32 {z}, ptr %int_acc"));
                         }
                         VarType::Word => {
-                            m.emit(format!("  {tmp} = load i16, ptr %ptr_{ir_name}"));
+                            m.emit(format!("  {tmp} = load i16, ptr {dptr}"));
                             let z = fresh_tmp();
                             m.emit(format!("  {z} = zext i16 {tmp} to i32"));
                             m.emit(format!("  store i32 {z}, ptr %int_acc"));
                         }
                         VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
-                            m.emit(format!("  {tmp} = load i32, ptr %ptr_{ir_name}"));
+                            m.emit(format!("  {tmp} = load i32, ptr {dptr}"));
                             m.emit(format!("  store i32 {tmp}, ptr %int_acc"));
                         }
                         _ => unreachable!(),
@@ -1084,8 +1704,9 @@ fn compile_il_to_llvm_ir(
                 }
                 // BOOL 変数
                 let ir_name = sanitize_llvm_name(name);
+                let dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
                 let tmp = fresh_tmp();
-                m.emit(format!("  {tmp} = load i1, ptr %ptr_{ir_name}"));
+                m.emit(format!("  {tmp} = load i1, ptr {dptr}"));
                 let val = match instr {
                     Instr::Ld(_) => tmp,
                     Instr::Ldn(_) => {
@@ -1113,7 +1734,8 @@ fn compile_il_to_llvm_ir(
                     let ir_name = sanitize_llvm_name(operand_base(name));
                     let elt = llvm_elem_ty(ty).unwrap();
                     let v = fresh_tmp();
-                    m.emit(format!("  {v} = load {elt}, ptr %ptr_{ir_name}"));
+                    let dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
+                    m.emit(format!("  {v} = load {elt}, ptr {dptr}"));
                     let sh = fresh_tmp();
                     m.emit(format!("  {sh} = lshr {elt} {v}, {bit}"));
                     let b1 = fresh_tmp();
@@ -1130,8 +1752,9 @@ fn compile_il_to_llvm_ir(
                         ));
                     }
                     let ir_name = sanitize_llvm_name(name);
+                    let dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
                     let s = fresh_tmp();
-                    m.emit(format!("  {s} = load i1, ptr %ptr_{ir_name}"));
+                    m.emit(format!("  {s} = load i1, ptr {dptr}"));
                     s
                 };
                 let rhs = match instr {
@@ -1161,7 +1784,7 @@ fn compile_il_to_llvm_ir(
                 } else if let Some(ms) = parse_time_literal(rhs) {
                     format!("{}", ms)
                 } else {
-                    emit_load_scalar_as_i32(&mut m, &mut fresh_tmp, &vars, rhs)?
+                    emit_load_scalar_as_i32(&mut m, memory, &mut fresh_tmp, &vars, rhs)?
                 };
                 let res = fresh_tmp();
                 m.emit(format!("  {res} = add i32 {lhs_tmp}, {rhs_val}"));
@@ -1176,7 +1799,7 @@ fn compile_il_to_llvm_ir(
                 } else if let Some(ms) = parse_time_literal(rhs) {
                     format!("{}", ms)
                 } else {
-                    emit_load_scalar_as_i32(&mut m, &mut fresh_tmp, &vars, rhs)?
+                    emit_load_scalar_as_i32(&mut m, memory, &mut fresh_tmp, &vars, rhs)?
                 };
                 let res = fresh_tmp();
                 m.emit(format!("  {res} = icmp ugt i32 {lhs_tmp}, {rhs_val}"));
@@ -1191,7 +1814,7 @@ fn compile_il_to_llvm_ir(
                 } else if let Some(ms) = parse_time_literal(rhs) {
                     format!("{}", ms)
                 } else {
-                    emit_load_scalar_as_i32(&mut m, &mut fresh_tmp, &vars, rhs)?
+                    emit_load_scalar_as_i32(&mut m, memory, &mut fresh_tmp, &vars, rhs)?
                 };
                 let res = fresh_tmp();
                 m.emit(format!("  {res} = icmp uge i32 {lhs_tmp}, {rhs_val}"));
@@ -1206,7 +1829,7 @@ fn compile_il_to_llvm_ir(
                 } else if let Some(ms) = parse_time_literal(rhs) {
                     format!("{}", ms)
                 } else {
-                    emit_load_scalar_as_i32(&mut m, &mut fresh_tmp, &vars, rhs)?
+                    emit_load_scalar_as_i32(&mut m, memory, &mut fresh_tmp, &vars, rhs)?
                 };
                 let res = fresh_tmp();
                 m.emit(format!("  {res} = icmp eq i32 {lhs_tmp}, {rhs_val}"));
@@ -1218,22 +1841,23 @@ fn compile_il_to_llvm_ir(
                     return Err(format!("SEL の第1オペランドは BOOL 変数である必要があります: {}", cond));
                 }
                 let cond_ir = sanitize_llvm_name(cond);
+                let c_dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &cond_ir);
                 let ctmp = fresh_tmp();
-                m.emit(format!("  {ctmp} = load i1, ptr %ptr_{cond_ir}"));
+                m.emit(format!("  {ctmp} = load i1, ptr {c_dptr}"));
 
                 let va = if let Some(n) = parse_int_literal(a) {
                     format!("{}", n)
                 } else if let Some(ms) = parse_time_literal(a) {
                     format!("{}", ms)
                 } else {
-                    emit_load_scalar_as_i32(&mut m, &mut fresh_tmp, &vars, a)?
+                    emit_load_scalar_as_i32(&mut m, memory, &mut fresh_tmp, &vars, a)?
                 };
                 let vb = if let Some(n) = parse_int_literal(b) {
                     format!("{}", n)
                 } else if let Some(ms) = parse_time_literal(b) {
                     format!("{}", ms)
                 } else {
-                    emit_load_scalar_as_i32(&mut m, &mut fresh_tmp, &vars, b)?
+                    emit_load_scalar_as_i32(&mut m, memory, &mut fresh_tmp, &vars, b)?
                 };
                 let r = fresh_tmp();
                 m.emit(format!("  {r} = select i1 {ctmp}, i32 {va}, i32 {vb}"));
@@ -1253,25 +1877,26 @@ fn compile_il_to_llvm_ir(
                     ));
                 }
                 let dst_ir = sanitize_llvm_name(dst);
+                let dst_dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &dst_ir);
                 match dst_ty {
                     VarType::Byte => {
                         let tr = fresh_tmp();
                         m.emit(format!("  {tr} = trunc i32 {r} to i8"));
-                        m.emit(format!("  store i8 {tr}, ptr %ptr_{dst_ir}"));
+                        m.emit(format!("  store i8 {tr}, ptr {dst_dptr}"));
                     }
                     VarType::Word => {
                         let tr = fresh_tmp();
                         m.emit(format!("  {tr} = trunc i32 {r} to i16"));
-                        m.emit(format!("  store i16 {tr}, ptr %ptr_{dst_ir}"));
+                        m.emit(format!("  store i16 {tr}, ptr {dst_dptr}"));
                     }
                     VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
-                        m.emit(format!("  store i32 {r}, ptr %ptr_{dst_ir}"));
+                        m.emit(format!("  store i32 {r}, ptr {dst_dptr}"));
                     }
                     VarType::Bool => unreachable!(),
                 }
             }
             Instr::Cal(inst_name) => {
-                emit_fb_call(&mut m, inst_name, &vars)?;
+                emit_fb_call(&mut m, memory, &mut fresh_tmp, inst_name, &vars)?;
             }
             Instr::St(name) | Instr::Stn(name) => {
                 let negate_acc = matches!(instr, Instr::Stn(_));
@@ -1285,6 +1910,7 @@ fn compile_il_to_llvm_ir(
                     }
                     validate_bit_index(ty, bit, name)?;
                     let ir_base = sanitize_llvm_name(operand_base(name));
+                    let base_dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_base);
                     let elt = llvm_elem_ty(ty).unwrap();
                     let cur = fresh_tmp();
                     m.emit(format!("  {cur} = load i1, ptr %acc"));
@@ -1296,7 +1922,7 @@ fn compile_il_to_llvm_ir(
                         cur
                     };
                     let old = fresh_tmp();
-                    m.emit(format!("  {old} = load {elt}, ptr %ptr_{ir_base}"));
+                    m.emit(format!("  {old} = load {elt}, ptr {base_dptr}"));
                     let one = fresh_tmp();
                     m.emit(format!("  {one} = shl {elt} 1, {bit}"));
                     let not_mask = fresh_tmp();
@@ -1315,10 +1941,11 @@ fn compile_il_to_llvm_ir(
                     m.emit(format!("  {shl} = shl {elt} {ext}, {bit}"));
                     let newv = fresh_tmp();
                     m.emit(format!("  {newv} = or {elt} {cleared}, {shl}"));
-                    m.emit(format!("  store {elt} {newv}, ptr %ptr_{ir_base}"));
+                    m.emit(format!("  store {elt} {newv}, ptr {base_dptr}"));
                     continue;
                 }
                 let ir_name = sanitize_llvm_name(name);
+                let name_dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
                 match ty {
                     VarType::Bool => {
                         let cur = fresh_tmp();
@@ -1330,7 +1957,7 @@ fn compile_il_to_llvm_ir(
                         } else {
                             cur
                         };
-                        m.emit(format!("  store i1 {cur}, ptr %ptr_{ir_name}"));
+                        m.emit(format!("  store i1 {cur}, ptr {name_dptr}"));
                     }
                     VarType::Byte | VarType::Word | VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
                         if negate_acc {
@@ -1345,19 +1972,19 @@ fn compile_il_to_llvm_ir(
                                 m.emit(format!("  {cur} = load i32, ptr %int_acc"));
                                 let tr = fresh_tmp();
                                 m.emit(format!("  {tr} = trunc i32 {cur} to i8"));
-                                m.emit(format!("  store i8 {tr}, ptr %ptr_{ir_name}"));
+                                m.emit(format!("  store i8 {tr}, ptr {name_dptr}"));
                             }
                             VarType::Word => {
                                 let cur = fresh_tmp();
                                 m.emit(format!("  {cur} = load i32, ptr %int_acc"));
                                 let tr = fresh_tmp();
                                 m.emit(format!("  {tr} = trunc i32 {cur} to i16"));
-                                m.emit(format!("  store i16 {tr}, ptr %ptr_{ir_name}"));
+                                m.emit(format!("  store i16 {tr}, ptr {name_dptr}"));
                             }
                             VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
                                 let cur = fresh_tmp();
                                 m.emit(format!("  {cur} = load i32, ptr %int_acc"));
-                                m.emit(format!("  store i32 {cur}, ptr %ptr_{ir_name}"));
+                                m.emit(format!("  store i32 {cur}, ptr {name_dptr}"));
                             }
                             _ => unreachable!(),
                         }
@@ -1376,9 +2003,10 @@ fn compile_il_to_llvm_ir(
                     }
                     validate_bit_index(ty, bit, name)?;
                     let ir_base = sanitize_llvm_name(operand_base(name));
+                    let base_dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_base);
                     let elt = llvm_elem_ty(ty).unwrap();
                     let old = fresh_tmp();
-                    m.emit(format!("  {old} = load {elt}, ptr %ptr_{ir_base}"));
+                    m.emit(format!("  {old} = load {elt}, ptr {base_dptr}"));
                     let one = fresh_tmp();
                     m.emit(format!("  {one} = shl {elt} 1, {bit}"));
                     let not_mask = fresh_tmp();
@@ -1398,9 +2026,9 @@ fn compile_il_to_llvm_ir(
                         m.emit(format!("  {shl} = shl {elt} {ext}, {bit}"));
                         let newv = fresh_tmp();
                         m.emit(format!("  {newv} = or {elt} {cleared}, {shl}"));
-                        m.emit(format!("  store {elt} {newv}, ptr %ptr_{ir_base}"));
+                        m.emit(format!("  store {elt} {newv}, ptr {base_dptr}"));
                     } else {
-                        m.emit(format!("  store {elt} {cleared}, ptr %ptr_{ir_base}"));
+                        m.emit(format!("  store {elt} {cleared}, ptr {base_dptr}"));
                     }
                     continue;
                 }
@@ -1408,8 +2036,28 @@ fn compile_il_to_llvm_ir(
                     return Err(format!("S/R のオペランドは BOOL またはビット指定である必要があります: {}", name));
                 }
                 let ir_name = sanitize_llvm_name(name);
-                let v = if set_true { "true" } else { "false" };
-                m.emit(format!("  store i1 {v}, ptr %ptr_{ir_name}"));
+                let name_dptr = emit_var_data_ptr(&mut m, memory, &mut fresh_tmp, &ir_name);
+                let cur_acc = fresh_tmp();
+                m.emit(format!("  {cur_acc} = load i1, ptr %acc"));
+                let old_v = fresh_tmp();
+                m.emit(format!("  {old_v} = load i1, ptr {name_dptr}"));
+                let new_v = fresh_tmp();
+                if set_true {
+                    m.emit(format!(
+                        "  {new_v} = select i1 {cur_acc}, i1 true, i1 {old_v}",
+                        cur_acc = cur_acc,
+                        old_v = old_v,
+                        new_v = new_v
+                    ));
+                } else {
+                    m.emit(format!(
+                        "  {new_v} = select i1 {cur_acc}, i1 false, i1 {old_v}",
+                        cur_acc = cur_acc,
+                        old_v = old_v,
+                        new_v = new_v
+                    ));
+                }
+                m.emit(format!("  store i1 {new_v}, ptr {name_dptr}", new_v = new_v));
             }
         }
     }
@@ -1468,20 +2116,33 @@ fn emit_tp_step(m: &mut LlvmModule) {
     m.emit("}");
 }
 
-/// TON (On-delay timer) の 1 スキャン: IN=false なら ET=0・Q=false。IN=true なら ET を ms 単位で
-///（1 スキャンあたり 1ms とみなして）加算し、ET>=PT で Q=true。PT/ET は i32（TIME# のミリ秒）。
+/// TON (On-delay): PLCPFB と同様に前周期 IN（`_IN_`）で立上りを検出。IN=false で ET/Q リセット。
+/// 1 スキャン≒1ms の簡易モデル（TIME# のミリ秒を PT/ET に使用）。
 fn emit_ton_step(m: &mut LlvmModule) {
-    m.emit("define void @ton_step(ptr %in, ptr %pt, ptr %et, ptr %q) {");
+    m.emit("define void @ton_step(ptr %in, ptr %pt, ptr %et, ptr %q, ptr %prev_in) {");
     m.emit("entry:");
-    m.emit("  %in_val = load i1, ptr %in");
-    m.emit("  br i1 %in_val, label %ton_in_true, label %ton_in_false");
+    m.emit("  %iv = load i1, ptr %in");
+    m.emit("  br i1 %iv, label %ton_in_on, label %ton_in_off");
     m.emit("");
-    m.emit("ton_in_false:");
+    m.emit("ton_in_off:");
     m.emit("  store i32 0, ptr %et");
     m.emit("  store i1 false, ptr %q");
+    m.emit("  store i1 false, ptr %prev_in");
     m.emit("  ret void");
     m.emit("");
-    m.emit("ton_in_true:");
+    m.emit("ton_in_on:");
+    m.emit("  %pv = load i1, ptr %prev_in");
+    m.emit("  %pv_n = xor i1 %pv, true");
+    m.emit("  %rise = and i1 %iv, %pv_n");
+    m.emit("  br i1 %rise, label %ton_rise, label %ton_hold");
+    m.emit("");
+    m.emit("ton_rise:");
+    m.emit("  store i32 0, ptr %et");
+    m.emit("  store i1 false, ptr %q");
+    m.emit("  store i1 true, ptr %prev_in");
+    m.emit("  ret void");
+    m.emit("");
+    m.emit("ton_hold:");
     m.emit("  %pt_val = load i32, ptr %pt");
     m.emit("  %et_old = load i32, ptr %et");
     m.emit("  %et_inc = add i32 %et_old, 1");
@@ -1490,6 +2151,7 @@ fn emit_ton_step(m: &mut LlvmModule) {
     m.emit("  store i32 %et_new, ptr %et");
     m.emit("  %q_val = icmp sge i32 %et_new, %pt_val");
     m.emit("  store i1 %q_val, ptr %q");
+    m.emit("  store i1 true, ptr %prev_in");
     m.emit("  ret void");
     m.emit("}");
 }
@@ -1522,13 +2184,156 @@ fn emit_f_trig_step(m: &mut LlvmModule) {
     m.emit("}");
 }
 
-fn ptr_for_var(vars: &[VarDecl], name: &str) -> Option<String> {
-    vars.iter()
-        .find(|v| v.name == name)
-        .map(|v| format!("%ptr_{}", sanitize_llvm_name(&v.name)))
+fn operand_for_global_var(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    vars: &[VarDecl],
+    name: &str,
+) -> Result<String, String> {
+    if !vars.iter().any(|v| v.name == name) {
+        return Err(format!("変数 {} が見つかりません", name));
+    }
+    let ir = sanitize_llvm_name(name);
+    Ok(emit_var_data_ptr(m, memory, fresh_tmp, &ir))
 }
 
-fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result<(), String> {
+fn fb_family_name(inst_name: &str) -> &str {
+    if let Some((head, tail)) = inst_name.rsplit_once('_') {
+        if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) {
+            return head;
+        }
+    }
+    inst_name
+}
+
+fn find_instance_field(vars: &[VarDecl], inst: &str, field: &str) -> Option<String> {
+    let exact = format!("{}.{}", inst, field);
+    if vars.iter().any(|v| v.name == exact) {
+        return Some(exact);
+    }
+    if field == "IN2" {
+        let p = format!("{}.IN_2_", inst);
+        if let Some(v) = vars.iter().find(|v| v.name.starts_with(&p)) {
+            return Some(v.name.clone());
+        }
+    }
+    let p = format!("{}.{}_", inst, field);
+    vars.iter()
+        .find(|v| v.name.starts_with(&p))
+        .map(|v| v.name.clone())
+}
+
+fn emit_load_any_as_i32(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    vars: &[VarDecl],
+    name: &str,
+) -> Result<String, String> {
+    let ty = lookup_var(vars, name)?;
+    let ir = sanitize_llvm_name(name);
+    let dptr = emit_var_data_ptr(m, memory, fresh_tmp, &ir);
+    match ty {
+        VarType::Bool => {
+            let t = fresh_tmp();
+            m.emit(format!("  {t} = load i1, ptr {dptr}"));
+            let z = fresh_tmp();
+            m.emit(format!("  {z} = zext i1 {t} to i32"));
+            Ok(z)
+        }
+        _ => emit_load_scalar_as_i32(m, memory, fresh_tmp, vars, name),
+    }
+}
+
+fn emit_load_any_as_bool(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    vars: &[VarDecl],
+    name: &str,
+) -> Result<String, String> {
+    let ty = lookup_var(vars, name)?;
+    let ir = sanitize_llvm_name(name);
+    let dptr = emit_var_data_ptr(m, memory, fresh_tmp, &ir);
+    match ty {
+        VarType::Bool => {
+            let t = fresh_tmp();
+            m.emit(format!("  {t} = load i1, ptr {dptr}"));
+            Ok(t)
+        }
+        _ => {
+            let v = emit_load_scalar_as_i32(m, memory, fresh_tmp, vars, name)?;
+            let c = fresh_tmp();
+            m.emit(format!("  {c} = icmp ne i32 {v}, 0"));
+            Ok(c)
+        }
+    }
+}
+
+fn emit_store_i32_to_var(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    vars: &[VarDecl],
+    name: &str,
+    val_i32: &str,
+) -> Result<(), String> {
+    let ty = lookup_var(vars, name)?;
+    let ir = sanitize_llvm_name(name);
+    let dptr = emit_var_data_ptr(m, memory, fresh_tmp, &ir);
+    match ty {
+        VarType::Bool => {
+            let c = fresh_tmp();
+            m.emit(format!("  {c} = icmp ne i32 {val_i32}, 0"));
+            m.emit(format!("  store i1 {c}, ptr {dptr}"));
+        }
+        VarType::Byte => {
+            let t = fresh_tmp();
+            m.emit(format!("  {t} = trunc i32 {val_i32} to i8"));
+            m.emit(format!("  store i8 {t}, ptr {dptr}"));
+        }
+        VarType::Word => {
+            let t = fresh_tmp();
+            m.emit(format!("  {t} = trunc i32 {val_i32} to i16"));
+            m.emit(format!("  store i16 {t}, ptr {dptr}"));
+        }
+        VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
+            m.emit(format!("  store i32 {val_i32}, ptr {dptr}"));
+        }
+    }
+    Ok(())
+}
+
+fn emit_store_bool_to_var(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    vars: &[VarDecl],
+    name: &str,
+    val_i1: &str,
+) -> Result<(), String> {
+    let ty = lookup_var(vars, name)?;
+    let ir = sanitize_llvm_name(name);
+    let dptr = emit_var_data_ptr(m, memory, fresh_tmp, &ir);
+    match ty {
+        VarType::Bool => m.emit(format!("  store i1 {val_i1}, ptr {dptr}")),
+        _ => {
+            let z = fresh_tmp();
+            m.emit(format!("  {z} = zext i1 {val_i1} to i32"));
+            emit_store_i32_to_var(m, memory, fresh_tmp, vars, name, &z)?;
+        }
+    }
+    Ok(())
+}
+
+fn emit_fb_call(
+    m: &mut LlvmModule,
+    memory: MemoryKind,
+    fresh_tmp: &mut impl FnMut() -> String,
+    inst_name: &str,
+    vars: &[VarDecl],
+) -> Result<(), String> {
     let base = inst_name;
 
     if base.starts_with("CTU") {
@@ -1539,14 +2344,29 @@ fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result
         let cv = format!("{}.CV", base);
         let prev_cu = format!("{}._prev_cu", base);
 
-        let cu_ptr = ptr_for_var(vars, &cu).ok_or_else(|| format!("CTU 入力 {} が見つかりません", cu))?;
-        let reset_ptr =
-            ptr_for_var(vars, &reset).ok_or_else(|| format!("CTU 入力 {} が見つかりません", reset))?;
-        let pv_ptr = ptr_for_var(vars, &pv).ok_or_else(|| format!("CTU 入力 {} が見つかりません", pv))?;
-        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("CTU 出力 {} が見つかりません", q))?;
-        let cv_ptr = ptr_for_var(vars, &cv).ok_or_else(|| format!("CTU 出力 {} が見つかりません", cv))?;
+        let cu_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &cu).map_err(|_| {
+                format!("CTU 入力 {} が見つかりません", cu)
+            })?;
+        let reset_ptr = operand_for_global_var(m, memory, fresh_tmp, vars, &reset).map_err(|_| {
+            format!("CTU 入力 {} が見つかりません", reset)
+        })?;
+        let pv_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &pv).map_err(|_| {
+                format!("CTU 入力 {} が見つかりません", pv)
+            })?;
+        let q_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &q).map_err(|_| {
+                format!("CTU 出力 {} が見つかりません", q)
+            })?;
+        let cv_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &cv).map_err(|_| {
+                format!("CTU 出力 {} が見つかりません", cv)
+            })?;
         let prev_cu_ptr =
-            ptr_for_var(vars, &prev_cu).ok_or_else(|| format!("CTU 内部 {} が見つかりません", prev_cu))?;
+            operand_for_global_var(m, memory, fresh_tmp, vars, &prev_cu).map_err(|_| {
+                format!("CTU 内部 {} が見つかりません", prev_cu)
+            })?;
 
         m.emit(format!(
             "  call void @ctu_step(ptr {}, ptr {}, ptr {}, ptr {}, ptr {}, ptr {})",
@@ -1562,13 +2382,26 @@ fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result
         let elapsed = format!("{}._elapsed", base);
         let running = format!("{}._running", base);
 
-        let in_ptr = ptr_for_var(vars, &in_).ok_or_else(|| format!("TP 入力 {} が見つかりません", in_))?;
-        let pt_ptr = ptr_for_var(vars, &pt).ok_or_else(|| format!("TP 入力 {} が見つかりません", pt))?;
-        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("TP 出力 {} が見つかりません", q))?;
+        let in_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &in_).map_err(|_| {
+                format!("TP 入力 {} が見つかりません", in_)
+            })?;
+        let pt_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &pt).map_err(|_| {
+                format!("TP 入力 {} が見つかりません", pt)
+            })?;
+        let q_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &q).map_err(|_| {
+                format!("TP 出力 {} が見つかりません", q)
+            })?;
         let elapsed_ptr =
-            ptr_for_var(vars, &elapsed).ok_or_else(|| format!("TP 内部 {} が見つかりません", elapsed))?;
+            operand_for_global_var(m, memory, fresh_tmp, vars, &elapsed).map_err(|_| {
+                format!("TP 内部 {} が見つかりません", elapsed)
+            })?;
         let running_ptr =
-            ptr_for_var(vars, &running).ok_or_else(|| format!("TP 内部 {} が見つかりません", running))?;
+            operand_for_global_var(m, memory, fresh_tmp, vars, &running).map_err(|_| {
+                format!("TP 内部 {} が見つかりません", running)
+            })?;
 
         m.emit(format!(
             "  call void @tp_step(ptr {}, ptr {}, ptr {}, ptr {}, ptr {})",
@@ -1582,15 +2415,32 @@ fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result
         let pt = format!("{}.PT", base);
         let et = format!("{}.ET", base);
         let q = format!("{}.Q", base);
+        let prev_in = format!("{}._IN_", base);
 
-        let in_ptr = ptr_for_var(vars, &in_).ok_or_else(|| format!("TON 入力 {} が見つかりません", in_))?;
-        let pt_ptr = ptr_for_var(vars, &pt).ok_or_else(|| format!("TON 入力 {} が見つかりません", pt))?;
-        let et_ptr = ptr_for_var(vars, &et).ok_or_else(|| format!("TON 入出力 {} が見つかりません", et))?;
-        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("TON 出力 {} が見つかりません", q))?;
+        let in_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &in_).map_err(|_| {
+                format!("TON 入力 {} が見つかりません", in_)
+            })?;
+        let pt_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &pt).map_err(|_| {
+                format!("TON 入力 {} が見つかりません", pt)
+            })?;
+        let et_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &et).map_err(|_| {
+                format!("TON 入出力 {} が見つかりません", et)
+            })?;
+        let q_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &q).map_err(|_| {
+                format!("TON 出力 {} が見つかりません", q)
+            })?;
+        let prev_ptr =
+            operand_for_global_var(m, memory, fresh_tmp, vars, &prev_in).map_err(|_| {
+                format!("TON 内部 {} が見つかりません", prev_in)
+            })?;
 
         m.emit(format!(
-            "  call void @ton_step(ptr {}, ptr {}, ptr {}, ptr {})",
-            in_ptr, pt_ptr, et_ptr, q_ptr
+            "  call void @ton_step(ptr {}, ptr {}, ptr {}, ptr {}, ptr {})",
+            in_ptr, pt_ptr, et_ptr, q_ptr, prev_ptr
         ));
         return Ok(());
     }
@@ -1599,10 +2449,15 @@ fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result
         let clk = format!("{}.CLK", base);
         let q = format!("{}.Q", base);
         let prev = format!("{}._prev_clk", base);
-        let clk_ptr = ptr_for_var(vars, &clk).ok_or_else(|| format!("R_TRIG 入力 {} が見つかりません", clk))?;
-        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("R_TRIG 出力 {} が見つかりません", q))?;
-        let prev_ptr =
-            ptr_for_var(vars, &prev).ok_or_else(|| format!("R_TRIG 内部 {} が見つかりません", prev))?;
+        let Ok(clk_ptr) = operand_for_global_var(m, memory, fresh_tmp, vars, &clk) else {
+            return Ok(());
+        };
+        let Ok(q_ptr) = operand_for_global_var(m, memory, fresh_tmp, vars, &q) else {
+            return Ok(());
+        };
+        let Ok(prev_ptr) = operand_for_global_var(m, memory, fresh_tmp, vars, &prev) else {
+            return Ok(());
+        };
         m.emit(format!(
             "  call void @r_trig_step(ptr {}, ptr {}, ptr {})",
             clk_ptr, q_ptr, prev_ptr
@@ -1614,14 +2469,199 @@ fn emit_fb_call(m: &mut LlvmModule, inst_name: &str, vars: &[VarDecl]) -> Result
         let clk = format!("{}.CLK", base);
         let q = format!("{}.Q", base);
         let prev = format!("{}._prev_clk", base);
-        let clk_ptr = ptr_for_var(vars, &clk).ok_or_else(|| format!("F_TRIG 入力 {} が見つかりません", clk))?;
-        let q_ptr = ptr_for_var(vars, &q).ok_or_else(|| format!("F_TRIG 出力 {} が見つかりません", q))?;
-        let prev_ptr =
-            ptr_for_var(vars, &prev).ok_or_else(|| format!("F_TRIG 内部 {} が見つかりません", prev))?;
+        let Ok(clk_ptr) = operand_for_global_var(m, memory, fresh_tmp, vars, &clk) else {
+            return Ok(());
+        };
+        let Ok(q_ptr) = operand_for_global_var(m, memory, fresh_tmp, vars, &q) else {
+            return Ok(());
+        };
+        let Ok(prev_ptr) = operand_for_global_var(m, memory, fresh_tmp, vars, &prev) else {
+            return Ok(());
+        };
         m.emit(format!(
             "  call void @f_trig_step(ptr {}, ptr {}, ptr {})",
             clk_ptr, q_ptr, prev_ptr
         ));
+        return Ok(());
+    }
+
+    // 汎用 FB 群（算術・比較・変換）
+    let family = fb_family_name(base).to_ascii_uppercase();
+    let in_name = find_instance_field(vars, base, "IN");
+    let in1_name = find_instance_field(vars, base, "IN1");
+    let in2_name = find_instance_field(vars, base, "IN2");
+    let out_name = find_instance_field(vars, base, "OUT");
+
+    if family == "MOVE"
+        || family == "UDINT_TO_INT"
+        || family == "WORD_TO_INT"
+        || family == "WORD_TO_DINT"
+        || family == "WORD_TO_SINT"
+        || family == "WORD_TO_DWORD"
+        || family == "DWORD_TO_WORD"
+        || family == "DWORD_TO_INT"
+        || family == "INT_TO_REAL"
+        || family == "REAL_TO_INT"
+        || family == "REAL_TO_DINT"
+        || family == "REAL_TO_LREAL"
+        || family == "LREAL_TO_REAL"
+        || family == "DWORD_TO_REAL"
+        || family == "EXP"
+        || family == "LN"
+    {
+        let Some(in_var) = in_name else {
+            return Ok(());
+        };
+        let Some(out_var) = out_name else {
+            return Ok(());
+        };
+        let v = emit_load_any_as_i32(m, memory, fresh_tmp, vars, &in_var)?;
+        emit_store_i32_to_var(m, memory, fresh_tmp, vars, &out_var, &v)?;
+        return Ok(());
+    }
+
+    if ["ADD", "SUB", "MUL", "DIV", "MOD", "SHR", "ROL", "BIT_TEST"].contains(&family.as_str()) {
+        let Some(a_name) = in1_name else {
+            return Ok(());
+        };
+        let Some(b_name) = in2_name else {
+            return Ok(());
+        };
+        let Some(out_var) = out_name else {
+            return Ok(());
+        };
+        let a = emit_load_any_as_i32(m, memory, fresh_tmp, vars, &a_name)?;
+        let b = emit_load_any_as_i32(m, memory, fresh_tmp, vars, &b_name)?;
+        let r = fresh_tmp();
+        match family.as_str() {
+            "ADD" => m.emit(format!("  {r} = add i32 {a}, {b}")),
+            "SUB" => m.emit(format!("  {r} = sub i32 {a}, {b}")),
+            "MUL" => m.emit(format!("  {r} = mul i32 {a}, {b}")),
+            "DIV" => {
+                let z = fresh_tmp();
+                m.emit(format!("  {z} = icmp eq i32 {b}, 0"));
+                let tag = fresh_tmp().replace('%', "");
+                let l_zero = format!("div_zero_{}", tag);
+                let l_do = format!("div_do_{}", tag);
+                let l_end = format!("div_end_{}", tag);
+                m.emit(format!("  br i1 {z}, label %{l_zero}, label %{l_do}"));
+                m.emit(format!("{l_do}:"));
+                let d = fresh_tmp();
+                m.emit(format!("  {d} = sdiv i32 {a}, {b}"));
+                m.emit(format!("  br label %{l_end}"));
+                m.emit(format!("{l_zero}:"));
+                m.emit(format!("  br label %{l_end}"));
+                m.emit(format!("{l_end}:"));
+                m.emit(format!("  {r} = phi i32 [0, %{l_zero}], [{d}, %{l_do}]"));
+            }
+            "MOD" => {
+                let z = fresh_tmp();
+                m.emit(format!("  {z} = icmp eq i32 {b}, 0"));
+                let tag = fresh_tmp().replace('%', "");
+                let l_zero = format!("mod_zero_{}", tag);
+                let l_do = format!("mod_do_{}", tag);
+                let l_end = format!("mod_end_{}", tag);
+                m.emit(format!("  br i1 {z}, label %{l_zero}, label %{l_do}"));
+                m.emit(format!("{l_do}:"));
+                let d = fresh_tmp();
+                m.emit(format!("  {d} = srem i32 {a}, {b}"));
+                m.emit(format!("  br label %{l_end}"));
+                m.emit(format!("{l_zero}:"));
+                m.emit(format!("  br label %{l_end}"));
+                m.emit(format!("{l_end}:"));
+                m.emit(format!("  {r} = phi i32 [0, %{l_zero}], [{d}, %{l_do}]"));
+            }
+            "SHR" => {
+                let amt = fresh_tmp();
+                m.emit(format!("  {amt} = and i32 {b}, 31"));
+                m.emit(format!("  {r} = lshr i32 {a}, {amt}"));
+            }
+            "ROL" => {
+                let amt = fresh_tmp();
+                m.emit(format!("  {amt} = and i32 {b}, 31"));
+                let inv = fresh_tmp();
+                m.emit(format!("  {inv} = sub i32 32, {amt}"));
+                let l = fresh_tmp();
+                m.emit(format!("  {l} = shl i32 {a}, {amt}"));
+                let rr = fresh_tmp();
+                m.emit(format!("  {rr} = lshr i32 {a}, {inv}"));
+                m.emit(format!("  {r} = or i32 {l}, {rr}"));
+            }
+            "BIT_TEST" => {
+                let amt = fresh_tmp();
+                m.emit(format!("  {amt} = and i32 {b}, 31"));
+                let s = fresh_tmp();
+                m.emit(format!("  {s} = lshr i32 {a}, {amt}"));
+                m.emit(format!("  {r} = and i32 {s}, 1"));
+            }
+            _ => unreachable!(),
+        }
+        emit_store_i32_to_var(m, memory, fresh_tmp, vars, &out_var, &r)?;
+        return Ok(());
+    }
+
+    if ["EQ", "NE", "GT", "GE", "LT", "LE"].contains(&family.as_str()) {
+        let Some(a_name) = in1_name else {
+            return Ok(());
+        };
+        let Some(b_name) = in2_name else {
+            return Ok(());
+        };
+        let Some(out_var) = out_name else {
+            return Ok(());
+        };
+        let a = emit_load_any_as_i32(m, memory, fresh_tmp, vars, &a_name)?;
+        let b = emit_load_any_as_i32(m, memory, fresh_tmp, vars, &b_name)?;
+        let c = fresh_tmp();
+        let pred = match family.as_str() {
+            "EQ" => "eq",
+            "NE" => "ne",
+            "GT" => "sgt",
+            "GE" => "sge",
+            "LT" => "slt",
+            "LE" => "sle",
+            _ => unreachable!(),
+        };
+        m.emit(format!("  {c} = icmp {pred} i32 {a}, {b}"));
+        emit_store_bool_to_var(m, memory, fresh_tmp, vars, &out_var, &c)?;
+        return Ok(());
+    }
+
+    if ["AND", "OR", "XOR"].contains(&family.as_str()) {
+        let Some(a_name) = in1_name else {
+            return Ok(());
+        };
+        let Some(b_name) = in2_name else {
+            return Ok(());
+        };
+        let Some(out_var) = out_name else {
+            return Ok(());
+        };
+        let a = emit_load_any_as_bool(m, memory, fresh_tmp, vars, &a_name)?;
+        let b = emit_load_any_as_bool(m, memory, fresh_tmp, vars, &b_name)?;
+        let r = fresh_tmp();
+        let op = match family.as_str() {
+            "AND" => "and",
+            "OR" => "or",
+            "XOR" => "xor",
+            _ => unreachable!(),
+        };
+        m.emit(format!("  {r} = {op} i1 {a}, {b}"));
+        emit_store_bool_to_var(m, memory, fresh_tmp, vars, &out_var, &r)?;
+        return Ok(());
+    }
+
+    if family == "NOT" {
+        let Some(in_var) = in_name else {
+            return Ok(());
+        };
+        let Some(out_var) = out_name else {
+            return Ok(());
+        };
+        let a = emit_load_any_as_bool(m, memory, fresh_tmp, vars, &in_var)?;
+        let r = fresh_tmp();
+        m.emit(format!("  {r} = xor i1 {a}, true"));
+        emit_store_bool_to_var(m, memory, fresh_tmp, vars, &out_var, &r)?;
         return Ok(());
     }
 
@@ -1641,36 +2681,41 @@ fn lookup_var(vars: &[VarDecl], name: &str) -> Result<VarType, String> {
 /// ADD/GT/GE/EQ/SEL のオペランドを int_acc 互換の i32 に読み込む。
 fn emit_load_scalar_as_i32(
     m: &mut LlvmModule,
+    memory: MemoryKind,
     fresh_tmp: &mut impl FnMut() -> String,
     vars: &[VarDecl],
     name: &str,
 ) -> Result<String, String> {
     let ty = lookup_var(vars, name)?;
     let ir = sanitize_llvm_name(name);
+    let dptr = emit_var_data_ptr(m, memory, fresh_tmp, &ir);
     match ty {
+        VarType::Bool => {
+            let t = fresh_tmp();
+            m.emit(format!("  {t} = load i1, ptr {dptr}"));
+            let z = fresh_tmp();
+            m.emit(format!("  {z} = zext i1 {t} to i32"));
+            Ok(z)
+        }
         VarType::Byte => {
             let t = fresh_tmp();
-            m.emit(format!("  {t} = load i8, ptr %ptr_{ir}"));
+            m.emit(format!("  {t} = load i8, ptr {dptr}"));
             let z = fresh_tmp();
             m.emit(format!("  {z} = zext i8 {t} to i32"));
             Ok(z)
         }
         VarType::Word => {
             let t = fresh_tmp();
-            m.emit(format!("  {t} = load i16, ptr %ptr_{ir}"));
+            m.emit(format!("  {t} = load i16, ptr {dptr}"));
             let z = fresh_tmp();
             m.emit(format!("  {z} = zext i16 {t} to i32"));
             Ok(z)
         }
         VarType::Int | VarType::Uint | VarType::Dword | VarType::Time => {
             let t = fresh_tmp();
-            m.emit(format!("  {t} = load i32, ptr %ptr_{ir}"));
+            m.emit(format!("  {t} = load i32, ptr {dptr}"));
             Ok(t)
         }
-        VarType::Bool => Err(format!(
-            "BOOL 変数は算術・比較のオペランドに直接使えません: {}",
-            name
-        )),
     }
 }
 
@@ -1736,7 +2781,7 @@ fn usage(program: &str) {
     eprintln!();
     eprintln!("IL (簡易サブセット) を LLVM IR (.ll) に変換します。");
     eprintln!("--memory は省略時 stack（スロットはグローバル初期化で il_mem を指す）。");
-    eprintln!("--memory=rtedge のときのみ <POU>_slots_init を生成するので main から一度呼ぶ。");
+    eprintln!("--memory=rtedge: <POU>_slots_init でタグ生成とレジストリ登録。Eg 実行後は IlRtedgeRegistry_BindAllSlots で il_slot を Entry に接続。");
 }
 
 fn main() {

@@ -329,6 +329,18 @@ void IlRtedgeTags_Init(void)
 	IlRtedgeSlots_BindEgEntry();
 #endif
 }
+
+/*
+ * llil --memory=rtedge の slots_init が参照（本サンプルは静的 bind のみのため no-op）。
+ */
+void il_rtedge_registry_clear(void) {}
+void il_rtedge_registry_record_binding(const char *spec, void **slot_pp)
+{
+	(void)spec;
+	(void)slot_pp;
+}
+void IlRtedgeRegistry_BindAllSlots(void) {}
+
 #if defined(__clang__)
 #pragma clang optimize on
 #endif

@@ -1,4 +1,4 @@
-; llst: simple ST -> LLVM IR
+; llst: simple ST -> LLVM IR memory=stack
 define i32 @STloop() {
 entry:
   %t1 = alloca i32

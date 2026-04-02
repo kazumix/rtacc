@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ConfigProject xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <NodeName>NodeA</NodeName>
+  <InstanceName>PLC</InstanceName>
+  <RetainName>EgRetain</RetainName>
+  <Priority>160</Priority>
+  <Scanrate>10</Scanrate>
+  <Watchdog>100</Watchdog>
+  <EnableWatchdog>false</EnableWatchdog>
+</ConfigProject>

@@ -43,12 +43,14 @@
       "compile_only": false,
       "includes": [
         ".",
+        "../IL",
         "$(RTEDGE)\\Library"
       ],
       "sources": [
         "main.c",
         "rtedge_tags.c",
-        "il_rtedge_egapi.c",
+        "../IL/plcp_rtedge_bridge.c",
+        "../IL/il_rtedge_egapi.c",
         "il_rtedge_slots_bind.c",
         "LED2Check.st"
       ],

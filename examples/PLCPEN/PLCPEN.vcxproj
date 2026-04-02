@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|INtime">
+      <Configuration>Debug</Configuration>
+      <Platform>INtime</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|INtime">
+      <Configuration>Release</Configuration>
+      <Platform>INtime</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ADD_EN.c" />
+    <ClCompile Include="BcdTo_EN.c" />
+    <ClCompile Include="BitOpe_EN.c" />
+    <ClCompile Include="BoolTo_EN.c" />
+    <ClCompile Include="ByteTo_EN.c" />
+    <ClCompile Include="DIntTo_EN.c" />
+    <ClCompile Include="DIV_EN.c" />
+    <ClCompile Include="DWordTo_EN.c" />
+    <ClCompile Include="EQ_EN.c" />
+    <ClCompile Include="EXPT_EN.c" />
+    <ClCompile Include="GE_EN.c" />
+    <ClCompile Include="GT_EN.c" />
+    <ClCompile Include="IntTo_EN.c" />
+    <ClCompile Include="LE_EN.c" />
+    <ClCompile Include="LIntTo_EN.c" />
+    <ClCompile Include="LogicOpe_EN.c" />
+    <ClCompile Include="LRealTo_EN.c" />
+    <ClCompile Include="LT_EN.c" />
+    <ClCompile Include="MOD_EN.c" />
+    <ClCompile Include="MOVE_EN.c" />
+    <ClCompile Include="MUL_EN.c" />
+    <ClCompile Include="NEG_EN.c" />
+    <ClCompile Include="NE_EN.c" />
+    <ClCompile Include="Numeric_EN.c" />
+    <ClCompile Include="PLCPEN.c" />
+    <ClCompile Include="RealTo_EN.c" />
+    <ClCompile Include="RotShift_EN.c" />
+    <ClCompile Include="Select_EN.c" />
+    <ClCompile Include="SIntTo_EN.c" />
+    <ClCompile Include="StringOpe_EN.c" />
+    <ClCompile Include="SUB_EN.c" />
+    <ClCompile Include="TimeTo_EN.c" />
+    <ClCompile Include="Trunc_EN.c" />
+    <ClCompile Include="UDIntTo_EN.c" />
+    <ClCompile Include="UIntTo_EN.c" />
+    <ClCompile Include="USIntTo_EN.c" />
+    <ClCompile Include="WordTo_EN.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PLCPEN.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PLCPEN.rc" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FDC3166D-8AD5-4694-9905-C7AB24B0647C}</ProjectGuid>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <ExtensionsToDeleteOnClean>*.cdf;*.cache;*.obj;*.obj.enc;*.ilk;*.ipdb;*.iobj;*.resources;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.pgc;*.pgd;*.meta;*.tlog;*.manifest;*.res;*.pch;*.exp;*.idb;*.rep;*.xdc;*.pdb;*_manifest.rc;*.bsc;*.sbr;*.xml;*.metagen;*.bi</ExtensionsToDeleteOnClean>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|INtime'">
+    <ClCompile>
+    </ClCompile>
+    <Link>
+      <Version>21076.20052</Version>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>vshelper17.lib;clib.lib;rt.lib;eghgapi.lib;PLCPIEC.lib;PLCP.lib</AdditionalDependencies>
+      <OutputFile>$(SolutionDir)$(Configuration)\\PLCPEN.rsl</OutputFile>
+      <AdditionalLibraryDirectories>..\..\0060ツールソフト\RT-edge3701\Library\Rt\;..\..\0060ツールソフト\MN_PID;%(AdditionalLibraryDirectories);..\..\0060ツールソフト\RT-edge\Library\Rt;$(SolutionDir)$(Configuration)</AdditionalLibraryDirectories>
+      <GenerateMapFile>true</GenerateMapFile>
+    </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PLCP;$(INtime)rt\include\network7;$(INtime)rt\include;..\..\0060ツールソフト\RT-edge\Library;$(SolutionDir)\PLCPIEC;$(INtime)rt\include\cpp17</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <PreprocessorDefinitions>_USRDLL;PLCPEN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs>Default</CompileAs>
+      <AssemblerOutput>All</AssemblerOutput>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|INtime'">
+    <ClCompile>
+    </ClCompile>
+    <Link>
+      <Version>21076.20052</Version>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>rtpp17.lib;cpplib17.lib;pcibus.lib;netlib.lib;vshelper17.lib;clib.lib;rt.lib</AdditionalDependencies>
+      <OutputFile>$(SolutionDir)$(Configuration)\\PLCPEN.rsl</OutputFile>
+    </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>$(INTIME)rt\include\cpp17;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <PreprocessorDefinitions>_USRDLL;PLCPEN_EXPORTS;__INTIME_CPP17;_HAS_NAMESPACE;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_SILENCE_BOGUS_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

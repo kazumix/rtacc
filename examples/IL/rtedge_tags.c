@@ -229,8 +229,8 @@ void IlRtedgeTags_Init(void)
 	}
 
 	/*
-	 * 3) グローバルスロット割り当て: llil --memory=rtedge の @il_slot_* ← @il_mem_*
-	 *    実 RTedge ではタグ解決したアドレスを store する想定。現状 llil は il_mem を指す。
+	 * 3) グローバルスロット割り当て: llil --memory=rtedge の slots_init（タグ生成＋レジストリ）。
+	 *    IlRtedgeRegistry_BindAllSlots で Entry を il_slot にバインドする。
 	 */
 	il_rtedge_invoke_slots_init();
 
@@ -242,6 +242,15 @@ void IlRtedgeTags_Init(void)
 	IlRtedgeSlots_BindEgEntry();
 #endif
 }
+
+void il_rtedge_registry_clear(void) {}
+void il_rtedge_registry_record_binding(const char *spec, void **slot_pp)
+{
+	(void)spec;
+	(void)slot_pp;
+}
+void IlRtedgeRegistry_BindAllSlots(void) {}
+
 #if defined(__clang__)
 #pragma clang optimize on
 #endif

@@ -22,7 +22,7 @@
       "toolset": "llvm",
       "output_dir": "out",
       "output": "hugeplc.rta",
-      "optimize": "1",
+      "optimize": "0",
       "compile_only": false,
       "includes": [
         ".",
@@ -31,21 +31,15 @@
       ],
       "sources": [
         "main.c",
-        "hugeplc_tag_catalog.c",
-        "il_rtedge_registry.c",
-        "il_rtedge_slots_bind.c",
-        "../IL/plcp_rtedge_bridge.c",
-        "../IL/il_rtedge_slot_registry.c",
-        "../IL/il_rtedge_egapi.c",
-        "hugeplc_ascii2.IL"
+        "hugeplc_ascii2.IL",
+        "out/hugeplc_ascii2.IL_rtedge_glue.c",
+        "../../rtedge/rtedgelink.c"
       ],
-      "il_memory": "rtedge",
       "libs": [
         "eghgapi.lib"
       ],
       "defines": [
-        "IL_USE_PLCP_RTEDGE",
-        "IL_USE_EGAPI"
+        "IL_USE_ETAG_RTEDGE"
       ],
       "flags": null
     }

@@ -1,8 +1,5 @@
-    Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on package cache
-   0.015502600s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint: fingerprint error for llst v0.1.0 (D:\work\rtacc\llst)/Check { test: false }/TargetInner { name: "llst", doc: true, ..: with_path("D:\\work\\rtacc\\llst\\src\\main.rs", Edition2021) }
-   0.015548100s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llst\target\debug\.fingerprint\llst-c8b44717129803c1\bin-llst`
+   0.013807100s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint: fingerprint error for llst v0.1.0 (D:\work\rtacc\llst)/Check { test: false }/TargetInner { name: "llst", doc: true, ..: with_path("D:\\work\\rtacc\\llst\\src\\main.rs", Edition2021) }
+   0.013895500s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llst\target\debug\.fingerprint\llst-c8b44717129803c1\bin-llst`
 
 Caused by:
     指定されたファイルが見つかりません。 (os error 2)
@@ -29,8 +26,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.031677700s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint: fingerprint error for llst v0.1.0 (D:\work\rtacc\llst)/Check { test: true }/TargetInner { name: "llst", doc: true, ..: with_path("D:\\work\\rtacc\\llst\\src\\main.rs", Edition2021) }
-   0.031706100s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llst\target\debug\.fingerprint\llst-c5d6eaf7f5863fe3\test-bin-llst`
+   0.027850800s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint: fingerprint error for llst v0.1.0 (D:\work\rtacc\llst)/Check { test: true }/TargetInner { name: "llst", doc: true, ..: with_path("D:\\work\\rtacc\\llst\\src\\main.rs", Edition2021) }
+   0.027879500s  INFO prepare_target{force=false package_id=llst v0.1.0 (D:\work\rtacc\llst) target="llst"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llst\target\debug\.fingerprint\llst-c5d6eaf7f5863fe3\test-bin-llst`
 
 Caused by:
     指定されたファイルが見つかりません。 (os error 2)
@@ -58,4 +55,4 @@ Stack backtrace:
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
     Checking llst v0.1.0 (D:\work\rtacc\llst)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.66s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.69s

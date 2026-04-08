@@ -1,8 +1,6 @@
     Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on package cache
-   0.016894700s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint: fingerprint error for llil v0.1.0 (D:\work\rtacc\llil)/Check { test: false }/TargetInner { name: "llil", doc: true, ..: with_path("D:\\work\\rtacc\\llil\\src\\main.rs", Edition2021) }
-   0.016939400s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llil\target\debug\.fingerprint\llil-ac85ce7c1f0fe94b\bin-llil`
+   0.011711900s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint: fingerprint error for llil v0.1.0 (D:\work\rtacc\llil)/Check { test: false }/TargetInner { name: "llil", doc: true, ..: with_path("D:\\work\\rtacc\\llil\\src\\main.rs", Edition2021) }
+   0.011752300s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llil\target\debug\.fingerprint\llil-ac85ce7c1f0fe94b\bin-llil`
 
 Caused by:
     指定されたファイルが見つかりません。 (os error 2)
@@ -29,8 +27,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.033078100s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint: fingerprint error for llil v0.1.0 (D:\work\rtacc\llil)/Check { test: true }/TargetInner { name: "llil", doc: true, ..: with_path("D:\\work\\rtacc\\llil\\src\\main.rs", Edition2021) }
-   0.033104500s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llil\target\debug\.fingerprint\llil-25c3ca8b145c4937\test-bin-llil`
+   0.020248400s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint: fingerprint error for llil v0.1.0 (D:\work\rtacc\llil)/Check { test: true }/TargetInner { name: "llil", doc: true, ..: with_path("D:\\work\\rtacc\\llil\\src\\main.rs", Edition2021) }
+   0.020297800s  INFO prepare_target{force=false package_id=llil v0.1.0 (D:\work\rtacc\llil) target="llil"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\work\rtacc\llil\target\debug\.fingerprint\llil-25c3ca8b145c4937\test-bin-llil`
 
 Caused by:
     指定されたファイルが見つかりません。 (os error 2)
@@ -58,4 +56,4 @@ Stack backtrace:
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
     Checking llil v0.1.0 (D:\work\rtacc\llil)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.79s

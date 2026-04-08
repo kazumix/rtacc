@@ -82,7 +82,14 @@ func BuildTarget(proj *config.Project, target *config.Target, projectDir string,
 	outputPath := config.ResolveOutputPath(target, projectDir)
 	if opts.Output != "" {
 		if opts.OutputDir != "" {
-			outputPath = filepath.Join(opts.OutputDir, opts.Output)
+			// project.json の output_dir が "out" なのに CLI で -o out/foo.rta と書くと、
+			// Join("out","out/foo.rta") → out/out/foo.rta になってしまう。
+			// -o が既に output_dir 配下を指す相対パスなら結合しない。
+			if outputPathAlreadyUnderOutputDir(opts.Output, opts.OutputDir) {
+				outputPath = opts.Output
+			} else {
+				outputPath = filepath.Join(opts.OutputDir, opts.Output)
+			}
 		} else {
 			outputPath = opts.Output
 		}
@@ -146,6 +153,25 @@ func listToolsetNames(proj *config.Project) string {
 		names = append(names, k)
 	}
 	return strings.Join(names, ", ")
+}
+
+// outputPathAlreadyUnderOutputDir は、相対パス out が相対パス dir の配下（または同一）かどうか。
+// dir が "." や空のときは false（呼び出し側で Join する）。
+func outputPathAlreadyUnderOutputDir(out, dir string) bool {
+	dir = strings.TrimSpace(dir)
+	if dir == "" || dir == "." {
+		return false
+	}
+	out = filepath.Clean(strings.TrimSpace(out))
+	dir = filepath.Clean(dir)
+	if filepath.IsAbs(out) || filepath.IsAbs(dir) {
+		return false
+	}
+	rel, err := filepath.Rel(dir, out)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 // resolveHelperExe は llst.exe / llil.exe のパスを次の順で決定する:
@@ -491,15 +517,19 @@ func buildLLVM(t *config.Target, ts *config.Toolset, outputPath, outDir, project
 			}
 			irInput = combinedBC
 		}
+		// llvm-link 後の結合 IR に project の -O をそのまま掛けると、モジュール全体に対する
+		// 再最適化になり、巨大プログラムでは clang が極端に時間がかかる（停止に見える）。
+		// 各ソースは既に個別に -O で .ll 化済みなので、結合後の asm/obj 生成は -O0 に固定する。
+		baseCompileCombined := []string{"-m32", "-target", "i386-pc-windows-msvc", "-O0"}
 		// combined IR から統合 asm を標準出力物として生成する。
 		argsAsm := []string{"-x", "ir"}
-		argsAsm = append(argsAsm, baseCompile...)
+		argsAsm = append(argsAsm, baseCompileCombined...)
 		argsAsm = append(argsAsm, "-S", irInput, "-o", combinedAsm)
 		if err := run(clang, argsAsm, "LL→asm (combined)"); err != nil {
 			return err
 		}
 		argsCombine := []string{"-x", "ir"}
-		argsCombine = append(argsCombine, baseCompile...)
+		argsCombine = append(argsCombine, baseCompileCombined...)
 		argsCombine = append(argsCombine, irInput, "-c", "-o", combinedObj)
 		if err := run(clang, argsCombine, "LL→obj (combined)"); err != nil {
 			return err
